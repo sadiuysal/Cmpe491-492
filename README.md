@@ -41,5 +41,7 @@ and given by [Danskin’s theorem](https://en.wikipedia.org/wiki/Danskin%27s_the
 gradient of the inner function involving the maximization term is simply given by the 
 gradient of the function evaluated at this maximum. 
 
+### Next Week:
+I will try to complete chapter 3 and get a basic understanding of recent updates in the field. 
 
 
