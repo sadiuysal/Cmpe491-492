@@ -4,7 +4,7 @@ CMPE 491 Project Repository
 ## Updates
 
 ### 26.10.2020-01.11.2020
-Completed 2 chapter in hands-on tutorial. 
+Completed introduction chapter in hands-on tutorial and done subtasks. 
 
 [Chapter 1 - Introduction to adversarial robustness](https://adversarial-ml-tutorial.org/introduction/)
 #### Chapter Parts:
