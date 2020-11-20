@@ -5,7 +5,7 @@ CMPE 491 Project Repository
 Please see wiki pages for weekly updates.
 
 
-#Implementation of [Contrastive Learning with Adversarial Examples](https://arxiv.org/pdf/2010.12050.pdf) based on SimCLR code
+# Implementation of [Contrastive Learning with Adversarial Examples](https://arxiv.org/pdf/2010.12050.pdf) based on SimCLR code
 
 
 # SimCLR - A Simple Framework for Contrastive Learning of Visual Representations
