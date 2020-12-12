@@ -87,7 +87,8 @@ def add_contrastive_loss(hidden1,hidden2,
       labels, tf.concat([logits_ba, logits_bb], 1))
   loss = tf.reduce_mean(loss_a + loss_b)
 
-  return loss, logits_ab, labels
+  #return loss, logits_ab, labels
+  return loss
 
 
 def tpu_cross_replica_concat(tensor, strategy=None):

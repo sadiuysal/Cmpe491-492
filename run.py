@@ -74,7 +74,8 @@ provide an exact and numerically stable loss calculation for all models when usi
 The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `True` index and returns a scalar loss for each example.
 """
 
-loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+#loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+loss_fn = obj_lib.add_contrastive_loss
 
 """This loss is equal to the negative log probability of the true class:
 It is zero if the model is sure of the correct class.
