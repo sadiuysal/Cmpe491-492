@@ -32,7 +32,7 @@ def add_supervised_loss(labels, logits):
   return tf.reduce_mean(losses)
 
 
-def add_contrastive_loss(hidden,
+def add_contrastive_loss(hidden1,hidden2,
                          hidden_norm=True,
                          temperature=1.0,
                          strategy=None):
@@ -51,8 +51,9 @@ def add_contrastive_loss(hidden,
   """
   # Get (normalized) hidden1 and hidden2.
   if hidden_norm:
-    hidden = tf.math.l2_normalize(hidden, -1)
-  hidden1, hidden2 = tf.split(hidden, 2, 0)
+    hidden1 = tf.math.l2_normalize(hidden1, -1)
+    hidden2 = tf.math.l2_normalize(hidden2, -1)
+  # hidden1, hidden2 = tf.split(hidden, 2, 0)
   batch_size = tf.shape(hidden1)[0]
 
   # Gather hidden1/hidden2 across replicas and create local labels.
