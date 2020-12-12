@@ -33,7 +33,7 @@ def add_supervised_loss(labels, logits):
 
 
 def add_contrastive_loss(hidden1,hidden2,
-                         hidden_norm=True,
+                         hidden_norm=False,
                          temperature=1.0,
                          strategy=None):
   """Compute loss for model.
@@ -49,6 +49,9 @@ def add_contrastive_loss(hidden1,hidden2,
     The logits for contrastive prediction task.
     The labels for contrastive prediction task.
   """
+  print(hidden1)
+  print("*****************--------***************")
+  print(hidden2)
   # Get (normalized) hidden1 and hidden2.
   if hidden_norm:
     hidden1 = tf.math.l2_normalize(hidden1, -1)
