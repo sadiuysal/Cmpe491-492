@@ -28,6 +28,7 @@ def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
   print()
   print(tf.shape(y_train_sets))
   print(tf.shape(outputs))
+  #LOOK HERE
   for ind in range(batch_size):
     z_prime = y_train_sets[ind]
     z_positive_set = [z_prime]
