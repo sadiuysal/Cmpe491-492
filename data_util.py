@@ -33,7 +33,7 @@ def sim_with_temperature(x,y,temperature):
   cos_sim=np.dot(x,y)/(np.linalg.norm(x)*np.linalg.norm(y))
   """m = tf.keras.metrics.CosineSimilarity(axis=1)
   m.update_state(x, y)"""
-  return (cos_sim/temperature).numpy()
+  return cos_sim/temperature
 
 def random_apply(func, p, x):
   """Randomly apply function func to x with probability p."""
