@@ -450,9 +450,9 @@ def batch_random_blur(images_list, height, width, blur_probability=0.5):
 def preprocess_for_train(image,
                          height,
                          width,
-                         color_distort=True,
+                         color_distort=False,
                          crop=False,
-                         flip=False,
+                         flip=True,
                          impl='simclrv2'):
   """Preprocesses the given image for training.
 
