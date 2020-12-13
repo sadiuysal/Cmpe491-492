@@ -25,13 +25,13 @@ LARGE_NUM = 1e9
 
 def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
   batch_size=int(tf.shape(outputs)[0])
+  print()
+  print(tf.shape(y_train_sets))
+  print(tf.shape(outputs))
   for ind in range(batch_size):
     z_prime = y_train_sets[ind]
     z_positive_set = [z_prime]
     z = outputs[ind]
-    print("shape z_prime:")
-    print(tf.shape(z_prime))
-    print()
     sum_z_pos = 0
     sum_z_neg = 0
     for z_pos in z_positive_set:
