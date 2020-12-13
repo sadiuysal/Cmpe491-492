@@ -66,7 +66,7 @@ model = tf.keras.models.Sequential([
 model.summary
 
 dataset_size=int(tf.shape(x_train)[0])
-y_train_sets=[0 for i in dataset_size]
+y_train_sets=[0 for i in range(dataset_size)]
 x_train_sets=x_train
 for ind in range(dataset_size):
   x=x_train[ind]
