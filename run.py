@@ -45,15 +45,16 @@ import tensorflow as tf
 
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
-mnist = tf.keras.datasets.mnist
+#mnist = tf.keras.datasets.mnist
+cifar10 = tf.keras.datasets.cifar10.load_data()
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
 x_train, x_test = x_train / 255.0, x_test / 255.0
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model = tf.keras.models.Sequential([
-  tf.keras.layers.Flatten(input_shape=(28, 28)),
+  tf.keras.layers.Flatten(input_shape=(32, 32)),
   tf.keras.layers.Dense(128, activation='relu'),
   tf.keras.layers.Dropout(0.2),
   tf.keras.layers.Dense(10)
@@ -68,7 +69,7 @@ for ind in range(dataset_size):
   width,height = tf.shape(x)[0],tf.shape(x)[1]
   t_x=data_util.preprocess_for_train(x,height,width)
   x_train_sets[ind] = model(t_x)
-  t_prime_x=data_util.preprocess_for_train(x,height,width)
+  t_prime_x=data_util.preprocess_for_train(x,height,width,flip=True)
   y_train_sets[ind] = model(t_prime_x)
   
 

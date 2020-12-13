@@ -450,7 +450,7 @@ def batch_random_blur(images_list, height, width, blur_probability=0.5):
 def preprocess_for_train(image,
                          height,
                          width,
-                         color_distort=False,
+                         color_distort=True,
                          crop=False,
                          flip=False,
                          impl='simclrv2'):
@@ -475,10 +475,7 @@ def preprocess_for_train(image,
     image = tf.image.random_flip_left_right(image)
   if color_distort:
     image = random_color_jitter(image, impl=impl)
-## add random blur , crop for now with probability
-  random_blur(image, height, width, p=0.5)
-  random_crop_with_resize(image, height, width, p=0.5)
-  image = tf.reshape(image, [height, width, 1])
+  image = tf.reshape(image, [height, width, 3])
   image = tf.clip_by_value(image, 0., 1.)
   return image
 
