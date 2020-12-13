@@ -103,14 +103,14 @@ It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
-loss_fn(y_train_sets[1], predictions).numpy()
+print(loss_fn(y_train_sets[1], predictions))
 
 model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
 
 """The `Model.fit` method adjusts the model parameters to minimize the loss: """
-
+##CHECKPOINT
 model.fit(x_train_sets, y_train_sets, epochs=5)
 
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
