@@ -71,7 +71,7 @@ print(tf.shape(x_train))
 print(tf.shape(y_train))
 #y_train_sets=[0 for i in range(dataset_size)]
 x_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
-y_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
+y_train_sets=np.empty([dataset_size, tf.shape(y_train)[1] ])
 #y_train_sets=[0 for i in range(dataset_size)]
 #x_train_sets=[0 for i in range(dataset_size)]
 print(x_train[0])
