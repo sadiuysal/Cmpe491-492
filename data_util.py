@@ -475,6 +475,7 @@ def preprocess_for_train(image,
     image = tf.image.random_flip_left_right(image)
   if color_distort:
     image = random_color_jitter(image, impl=impl)
+  random_blur(image, height, width, p=0.5)
   image = tf.reshape(image, [height, width, 3])
   image = tf.clip_by_value(image, 0., 1.)
   return image
