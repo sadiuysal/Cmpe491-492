@@ -42,7 +42,7 @@ Note: Upgrade `pip` to install the TensorFlow 2 package. See the [install guide]
 import objective as obj_lib
 import data_util
 import tensorflow as tf
-
+import numpy as np
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
 #mnist = tf.keras.datasets.mnist
@@ -69,8 +69,13 @@ model.summary
 dataset_size=int(tf.shape(x_train)[0])
 print(tf.shape(x_train))
 print(tf.shape(y_train))
-y_train_sets=[0 for i in range(dataset_size)]
-x_train_sets=[0 for i in range(dataset_size)]
+#y_train_sets=[0 for i in range(dataset_size)]
+x_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
+y_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
+#y_train_sets=[0 for i in range(dataset_size)]
+#x_train_sets=[0 for i in range(dataset_size)]
+print(x_train[0])
+print(tf.shape(x_train[0]))
 for ind in range(dataset_size):
   if ind%1000==0:
     print(ind)
