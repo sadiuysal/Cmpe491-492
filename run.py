@@ -91,7 +91,7 @@ for ind in range(dataset_size):
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 print(tf.shape(x_train_sets[1]))
-print(tf.shape(tf.expand_dims(x_train_sets[1])))
+print(tf.shape(tf.expand_dims(x_train_sets[1],0)))
 predictions = model(x_train_sets[1]).numpy()
 #predictions
 
