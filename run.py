@@ -67,6 +67,8 @@ model = tf.keras.models.Sequential([
 model.summary
 
 dataset_size=int(tf.shape(x_train)[0])
+print(tf.shape(x_train))
+print(tf.shape(y_train))
 y_train_sets=[0 for i in range(dataset_size)]
 x_train_sets=[0 for i in range(dataset_size)]
 for ind in range(dataset_size):
@@ -110,7 +112,6 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 """The `Model.fit` method adjusts the model parameters to minimize the loss: """
-##CHECKPOINT
 model.fit(x_train_sets, y_train_sets, epochs=5)
 
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
