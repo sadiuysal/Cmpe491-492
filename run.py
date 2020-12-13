@@ -83,11 +83,11 @@ for ind in range(dataset_size):
     print(ind)
   x=x_train[ind]
   width,height = tf.shape(x)[0],tf.shape(x)[1]
-  t_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
+  t_x=data_util.preprocess_for_train(x,height,width),0
   x_train_sets[ind] = t_x
   t_prime_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
   y_train_sets[ind] = model(t_prime_x)
-  
+tf.expand_dims(x_train_sets,0)
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 print(tf.shape(x_train_sets[1]))
