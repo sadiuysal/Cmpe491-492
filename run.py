@@ -72,7 +72,7 @@ for ind in range(dataset_size):
   x=x_train[ind]
   width,height = tf.shape(x)[0],tf.shape(x)[1]
   t_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
-  x_train_sets[ind] = model(t_x)
+  x_train_sets[ind] = t_x
   t_prime_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width,crop=True),0)
   y_train_sets[ind] = model(t_prime_x)
   
