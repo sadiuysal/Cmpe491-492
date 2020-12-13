@@ -31,7 +31,7 @@ def sim_with_temperature(x,y,temperature):
   print(x)
   print(y)
   m = tf.keras.metrics.CosineSimilarity(axis=1)
-  m.update_state(x, y)
+  m.update_state(x.numpy(), y.numpy())
   return (m.result()/temperature).numpy()
 
 def random_apply(func, p, x):
