@@ -70,29 +70,24 @@ dataset_size=int(tf.shape(x_train)[0])
 print(tf.shape(x_train))
 print(tf.shape(y_train))
 #y_train_sets=[0 for i in range(dataset_size)]
-x_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
+x_train_sets=np.empty([dataset_size, 1 ,  tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
 y_train_sets=np.empty([dataset_size, 10 ])
 
-print(tf.shape(y_train_sets))
 #y_train_sets=[0 for i in range(dataset_size)]
 #x_train_sets=[0 for i in range(dataset_size)]
-print(x_train[0])
-print(tf.shape(x_train[0]))
 for ind in range(dataset_size):
   if ind%1000==0:
     print(ind)
   x=x_train[ind]
   width,height = tf.shape(x)[0],tf.shape(x)[1]
   t_x=data_util.preprocess_for_train(x,height,width)
-  x_train_sets[ind] = t_x
+  x_train_sets[ind] = tf.expand_dims( t_x , 0 )
   t_prime_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
   y_train_sets[ind] = model(t_prime_x)
-x_train_sets=tf.expand_dims(x_train_sets,0)
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
-print(tf.shape(x_train_sets[0]))
-print(tf.shape(tf.expand_dims(x_train_sets[0,1],0)))
-predictions = model(x_train_sets[0,1]).numpy()
+
+predictions = model(x_train_sets[0]).numpy()
 #predictions
 
 """The `tf.nn.softmax` function converts these logits to "probabilities" for each class: """
