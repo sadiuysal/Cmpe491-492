@@ -16,13 +16,29 @@
 """Contrastive loss functions."""
 
 from absl import flags
-
+import data_util
 import tensorflow.compat.v2 as tf
 
 FLAGS = flags.FLAGS
 
 LARGE_NUM = 1e9
 
+def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
+  batch_size=int(tf.shape(outputs)[0])
+  for ind in range(batch_size):
+    z_prime = y_train_sets[ind]
+    z_positive_set = [z_prime]
+    z = outputs[ind]
+    sum_z_pos = 0
+    sum_z_neg = 0
+    for z_pos in z_positive_set:
+      sum_z_pos += tf.math.exp(data_util.sim_with_temperature(z,z_pos,temperature) , name=None)
+    for temp in range(batch_size):
+      if temp == ind:
+        continue
+      z_neg = outputs[ind]
+      sum_z_neg += tf.math.exp(data_util.sim_with_temperature(z,z_neg,temperature) , name=None)
+    return - tf.math.log(sum_z_pos/(sum_z_neg+sum_z_pos), name=None)
 
 def add_supervised_loss(labels, logits):
   """Compute mean supervised loss over local batch."""
@@ -32,8 +48,8 @@ def add_supervised_loss(labels, logits):
   return tf.reduce_mean(losses)
 
 
-def add_contrastive_loss(hidden1,hidden2,
-                         hidden_norm=False,
+def add_contrastive_loss(hidden,
+                         hidden_norm=True,
                          temperature=1.0,
                          strategy=None):
   """Compute loss for model.
@@ -49,14 +65,10 @@ def add_contrastive_loss(hidden1,hidden2,
     The logits for contrastive prediction task.
     The labels for contrastive prediction task.
   """
-  print(hidden1)
-  print("*****************--------***************")
-  print(hidden2)
   # Get (normalized) hidden1 and hidden2.
   if hidden_norm:
-    hidden1 = tf.math.l2_normalize(hidden1, -1)
-    hidden2 = tf.math.l2_normalize(hidden2, -1)
-  # hidden1, hidden2 = tf.split(hidden, 2, 0)
+    hidden = tf.math.l2_normalize(hidden, -1)
+  hidden1, hidden2 = tf.split(hidden, 2, 0)
   batch_size = tf.shape(hidden1)[0]
 
   # Gather hidden1/hidden2 across replicas and create local labels.
@@ -90,8 +102,7 @@ def add_contrastive_loss(hidden1,hidden2,
       labels, tf.concat([logits_ba, logits_bb], 1))
   loss = tf.reduce_mean(loss_a + loss_b)
 
-  #return loss, logits_ab, labels
-  return loss
+  return loss, logits_ab, labels
 
 
 def tpu_cross_replica_concat(tensor, strategy=None):

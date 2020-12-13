@@ -24,6 +24,11 @@ FLAGS = flags.FLAGS
 
 CROP_PROPORTION = 0.875  # Standard for ImageNet.
 
+#cosine similarity_with_temperature
+def sim_with_temperature(x,y,temperature):
+  m = tf.keras.metrics.CosineSimilarity(axis=1)
+  m.update_state(x, y)
+  return (m.result()/temperature).numpy()
 
 def random_apply(func, p, x):
   """Randomly apply function func to x with probability p."""
@@ -446,7 +451,7 @@ def preprocess_for_train(image,
                          height,
                          width,
                          color_distort=True,
-                         crop=True,
+                         crop=False,
                          flip=True,
                          impl='simclrv2'):
   """Preprocesses the given image for training.
