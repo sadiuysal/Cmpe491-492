@@ -46,7 +46,7 @@ import tensorflow as tf
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
 #mnist = tf.keras.datasets.mnist
-cifar10 = tf.keras.datasets.cifar10.load_data()
+cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 x_train, x_test = x_train / 255.0, x_test / 255.0
