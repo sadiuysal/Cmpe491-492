@@ -87,7 +87,7 @@ for ind in range(dataset_size):
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 
-predictions = model(tf.expand_dims(x_train_sets[0]),0).numpy()
+predictions = model(tf.expand_dims(x_train_sets[0],0)).numpy()
 #predictions
 
 """The `tf.nn.softmax` function converts these logits to "probabilities" for each class: """
