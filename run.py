@@ -54,7 +54,7 @@ x_train, x_test = x_train / 255.0, x_test / 255.0
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model = tf.keras.models.Sequential([
-  tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3))),
+  tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Flatten(),
   tf.keras.layers.Dense(64, activation='relu'),
