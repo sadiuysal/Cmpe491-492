@@ -49,6 +49,7 @@ import tensorflow as tf
 cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+x_train, y_train, x_test, y_test = x_train[-1000:] , y_train[-1000:], x_test[-1000:], y_test[-1000:]
 x_train, x_test = x_train / 255.0, x_test / 255.0
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
@@ -67,7 +68,7 @@ model.summary
 
 dataset_size=int(tf.shape(x_train)[0])
 y_train_sets=[0 for i in range(dataset_size)]
-x_train_sets=x_train
+x_train_sets=[0 for i in range(dataset_size)]
 for ind in range(dataset_size):
   if ind%1000==0:
     print(ind)
@@ -81,7 +82,7 @@ for ind in range(dataset_size):
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 
-predictions = model(x_train_sets[:1]).numpy()
+predictions = model(x_train_sets[1]).numpy()
 #predictions
 
 """The `tf.nn.softmax` function converts these logits to "probabilities" for each class: """
@@ -102,7 +103,6 @@ It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
-#print(y_train[:1])
 loss_fn(y_train_sets[1], predictions).numpy()
 
 model.compile(optimizer='adam',

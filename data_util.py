@@ -26,6 +26,8 @@ CROP_PROPORTION = 0.875  # Standard for ImageNet.
 
 #cosine similarity_with_temperature
 def sim_with_temperature(x,y,temperature):
+  print(tf.shape(x))
+  print(tf.shape(y))
   m = tf.keras.metrics.CosineSimilarity(axis=1)
   m.update_state(x, y)
   return (m.result()/temperature).numpy()
