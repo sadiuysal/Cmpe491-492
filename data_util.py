@@ -17,7 +17,7 @@
 
 import functools
 from absl import flags
-
+import numpy as np
 import tensorflow.compat.v2 as tf
 
 FLAGS = flags.FLAGS
@@ -30,9 +30,10 @@ def sim_with_temperature(x,y,temperature):
   print(tf.shape(y))
   print(x)
   print(y)
-  m = tf.keras.metrics.CosineSimilarity(axis=1)
-  m.update_state(x.numpy(), y)
-  return (m.result()/temperature).numpy()
+  cos_sim=np.dot(x,y)/(np.linalg.norm(x)*np.linalg.norm(y))
+  """m = tf.keras.metrics.CosineSimilarity(axis=1)
+  m.update_state(x, y)"""
+  return (cos_sim/temperature).numpy()
 
 def random_apply(func, p, x):
   """Randomly apply function func to x with probability p."""
