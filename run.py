@@ -178,13 +178,15 @@ model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
 
-"""The `Model.fit` method adjusts the model parameters to minimize the loss: """
-model.fit(x_train, y_train, epochs=5)
+"""
+
+""" The `Model.fit` method adjusts the model parameters to minimize the loss: """
+#model.fit(x_train, y_train, epochs=5)
 
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
 #model.evaluate(x_test,  y_test, verbose=2)
-"""
+
 """The image classifier is now trained to ~98% accuracy on this dataset. To learn more, read the [TensorFlow tutorials](https://www.tensorflow.org/tutorials/).
 
 If you want your model to return a probability, you can wrap the trained model, and attach the softmax to it:
