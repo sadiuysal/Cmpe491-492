@@ -68,13 +68,6 @@ data_augmentation = tf.keras.Sequential([
   layers.experimental.preprocessing.RandomRotation(0.2),
 ])
 
-func_name=sys.argv[1]
-if func_name=="aug":
-  data_augmentation()
-elif func_name=="d":
-  display_aug_images()
-elif func_name=="resize":
-  resize_and_rescale()
 
 
 
@@ -163,6 +156,14 @@ provide an exact and numerically stable loss calculation for all models when usi
 The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `True` index and returns a scalar loss for each example.
 """
 
+func_name=sys.argv[1]
+if func_name=="aug":
+  data_augmentation()
+elif func_name=="d":
+  display_aug_images()
+elif func_name=="resize":
+  resize_and_rescale()
+
 #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 loss_fn = obj_lib.RoCL_contrastive_loss
 
@@ -172,7 +173,7 @@ It is zero if the model is sure of the correct class.
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
 #print(loss_fn(y_train_sets[1], predictions))
-
+"""
 model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
@@ -183,7 +184,7 @@ model.fit(x_train, y_train, epochs=5)
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
 #model.evaluate(x_test,  y_test, verbose=2)
-
+"""
 """The image classifier is now trained to ~98% accuracy on this dataset. To learn more, read the [TensorFlow tutorials](https://www.tensorflow.org/tutorials/).
 
 If you want your model to return a probability, you can wrap the trained model, and attach the softmax to it:
