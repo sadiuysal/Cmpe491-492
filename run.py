@@ -137,8 +137,9 @@ def display_aug_images():
   plt.figure(figsize=(10, 10))
   for i in range(9):
     augmented_image = data_augmentation(image)
+    print(augmented_image)
     ax = plt.subplot(3, 3, i + 1)
-    plt.imshow(augmented_image[0])
+    plt.show(augmented_image[0],block=True)
     plt.axis("off")
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
@@ -161,7 +162,6 @@ print(func_name)
 if func_name=="aug":
   data_augmentation()
 elif func_name=="d":
-  print("hello")
   display_aug_images()
 elif func_name=="resize":
   resize_and_rescale()
