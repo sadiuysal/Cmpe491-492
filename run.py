@@ -38,11 +38,15 @@ Download and install TensorFlow 2. Import TensorFlow into your program:
 
 Note: Upgrade `pip` to install the TensorFlow 2 package. See the [install guide](https://www.tensorflow.org/install) for details.
 """
-
+import matplotlib.pyplot as plt
+from tensorflow.keras import layers
 import objective as obj_lib
 import data_util
 import tensorflow as tf
 import numpy as np
+import sys
+
+
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
 #mnist = tf.keras.datasets.mnist
@@ -50,12 +54,36 @@ cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 x_train, y_train, x_test, y_test = x_train[-1000:] , y_train[-1000:], x_test[-1000:], y_test[-1000:]
-x_train, x_test = x_train / 255.0, x_test / 255.0
+#x_train, x_test = x_train / 255.0, x_test / 255.0
+
+IMG_SIZE=tf.shape(x_train)[1]
+#resize_and_scale with layers
+resize_and_rescale = tf.keras.Sequential([
+  layers.experimental.preprocessing.Resizing(IMG_SIZE, IMG_SIZE),
+  layers.experimental.preprocessing.Rescaling(1./255)
+])
+#data augmentation layers
+data_augmentation = tf.keras.Sequential([
+  layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+  layers.experimental.preprocessing.RandomRotation(0.2),
+])
+
+func_name=sys.argv[1]
+if func_name=="aug":
+  data_augmentation()
+elif func_name=="d":
+  display_aug_images()
+elif func_name=="resize":
+  resize_and_rescale()
+
+
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model = tf.keras.models.Sequential([
-  tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
+  ##resize_and_rescale,
+  #data_augmentation,
+  tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
   tf.keras.layers.Flatten(),
@@ -66,28 +94,63 @@ model = tf.keras.models.Sequential([
 
 model.summary
 
-dataset_size=int(tf.shape(x_train)[0])
-print(tf.shape(x_train))
-print(tf.shape(y_train))
-#y_train_sets=[0 for i in range(dataset_size)]
-x_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
-y_train_sets=np.empty([dataset_size, 10 ])
+  
 
-#y_train_sets=[0 for i in range(dataset_size)]
-#x_train_sets=[0 for i in range(dataset_size)]
-for ind in range(dataset_size):
-  if ind%1000==0:
-    print(ind)
-  x=x_train[ind]
-  width,height = tf.shape(x)[0],tf.shape(x)[1]
-  t_x=data_util.preprocess_for_train(x,height,width)
-  x_train_sets[ind] = t_x
-  t_prime_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
-  y_train_sets[ind] = model(t_prime_x)
+
+def prepare(ds=x_train, shuffle=False, augment=True,batch_size = 32):
+  AUTOTUNE = tf.data.experimental.AUTOTUNE
+  # Resize and rescale all datasets
+  ds = ds.map(lambda x, y: (augment(x), y), 
+              num_parallel_calls=AUTOTUNE)
+  if shuffle:
+    ds = ds.shuffle(1000)
+
+  # Batch all datasets
+  ds = ds.batch(batch_size)
+
+  # Use data augmentation only on the training set
+  if augment:
+    ds = ds.map(lambda x, y: (data_augmentation(x, training=True), y), 
+                num_parallel_calls=AUTOTUNE)
+
+  # Use buffered prefecting on all datasets
+  return ds.prefetch(buffer_size=AUTOTUNE)
+  """
+  dataset_size=int(tf.shape(x_train)[0])
+  print(tf.shape(x_train))
+  print(tf.shape(y_train))
+  #y_train_sets=[0 for i in range(dataset_size)]
+  x_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
+  y_train_sets=np.empty([dataset_size, 10 ])
+
+  #y_train_sets=[0 for i in range(dataset_size)]
+  #x_train_sets=[0 for i in range(dataset_size)]
+  for ind in range(dataset_size):
+    if ind%1000==0:
+      print(ind)
+    x=x_train[ind]
+    width,height = tf.shape(x)[0],tf.shape(x)[1]
+    t_x=data_util.preprocess_for_train(x,height,width)
+    x_train_sets[ind] = t_x
+    t_prime_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
+    y_train_sets[ind] = model(t_prime_x)
+  return x_train_sets , y_train_sets
+  """
+
+def display_aug_images():
+  image=x_train[0]
+  # Add the image to a batch
+  image = tf.expand_dims(image, 0)
+  plt.figure(figsize=(10, 10))
+  for i in range(9):
+    augmented_image = data_augmentation(image)
+    ax = plt.subplot(3, 3, i + 1)
+    plt.imshow(augmented_image[0])
+    plt.axis("off")
 
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 
-predictions = model(tf.expand_dims(x_train_sets[0],0)).numpy()
+#predictions = model(tf.expand_dims(x_train_sets[0],0)).numpy()
 #predictions
 
 """The `tf.nn.softmax` function converts these logits to "probabilities" for each class: """
@@ -108,14 +171,14 @@ It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
-print(loss_fn(y_train_sets[1], predictions))
+#print(loss_fn(y_train_sets[1], predictions))
 
 model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
 
 """The `Model.fit` method adjusts the model parameters to minimize the loss: """
-model.fit(x_train_sets, y_train_sets, epochs=5)
+model.fit(x_train, y_train, epochs=5)
 
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 

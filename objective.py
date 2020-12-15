@@ -18,11 +18,27 @@
 from absl import flags
 import data_util
 import tensorflow.compat.v2 as tf
-
 FLAGS = flags.FLAGS
 
 LARGE_NUM = 1e9
 
+"""
+def constrastive_loss():
+  left = tf.placeholder(tf.float32, [None, 28, 28, 1])
+  right = tf.placeholder(tf.float32, [None, 28, 28, 1])
+  label = tf.placeholder(tf.int32, [None, 1]) # 0 if same, 1 if different
+  margin = 0.2
+
+  left_output = model(left)  # shape [None, 128]
+  right_output = model(right)  # shape [None, 128]
+
+  d = tf.reduce_sum(tf.square(left_output - right_output), 1)
+  d_sqrt = tf.sqrt(d)
+
+  loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
+
+  loss = 0.5 * tf.reduce_mean(loss)
+"""
 def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
   batch_size=int(tf.shape(outputs)[0])
   print()
