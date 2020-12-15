@@ -157,9 +157,11 @@ The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `
 """
 
 func_name=sys.argv[1]
+print(func_name)
 if func_name=="aug":
   data_augmentation()
 elif func_name=="d":
+  print("hello")
   display_aug_images()
 elif func_name=="resize":
   resize_and_rescale()
