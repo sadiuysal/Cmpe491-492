@@ -25,8 +25,8 @@ LARGE_NUM = 1e9
 def contrastive_loss(y_train, x_train):
   import run
   tf_v1.disable_v2_behavior() 
-  left = tf_v1.placeholder(tf.float32, [None, 28, 28, 1])
-  right = tf_v1.placeholder(tf.float32, [None, 28, 28, 1])
+  left = tf_v1.placeholder(tf.float32, [None, 32, 32, 3])
+  right = tf_v1.placeholder(tf.float32, [None, 32, 32, 3])
   label = tf_v1.placeholder(tf.int32, [None, 1]) # 0 if same, 1 if different
   margin = 0.2
 
