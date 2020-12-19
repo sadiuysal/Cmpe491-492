@@ -18,16 +18,15 @@
 from absl import flags
 import data_util
 import tensorflow.compat.v2 as tf
-import tensorflow.compat.v1 as tf_v1
 FLAGS = flags.FLAGS
 LARGE_NUM = 1e9
 
-def contrastive_loss(y_train, x_train):
+def contrastive_loss(y_train, x_train): 
   import run
-  tf_v1.disable_v2_behavior() 
-  left = tf_v1.placeholder(tf.float32, [None, 32, 32, 3])
-  right = tf_v1.placeholder(tf.float32, [None, 32, 32, 3])
-  label = tf_v1.placeholder(tf.int32, [None, 1]) # 0 if same, 1 if different
+  left = tf.keras.Input( shape=(None, 32, 32, 3), dtype=tf.dtypes.float32)
+  right = tf.keras.Input( shape=(None, 32, 32, 3), dtype=tf.dtypes.float32)
+  label = tf.keras.Input( shape=(None, 1), dtype=tf.dtypes.int32)
+
   margin = 0.2
 
   left_output = run.model(left)  # shape [None, 128]
