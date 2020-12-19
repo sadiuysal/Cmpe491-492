@@ -189,7 +189,7 @@ elif func_name=="resize":
   resize_and_rescale()"""
 
 #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-loss_fn = obj_lib.contrastive_loss
+loss_fn = contrastive_loss
 
 """This loss is equal to the negative log probability of the true class:
 It is zero if the model is sure of the correct class.
