@@ -19,10 +19,10 @@ from absl import flags
 import data_util
 import tensorflow.compat.v2 as tf
 FLAGS = flags.FLAGS
-import run
 LARGE_NUM = 1e9
 
 def contrastive_loss(y_train, x_train):
+  import run
   left = tf.placeholder(tf.float32, [None, 28, 28, 1])
   right = tf.placeholder(tf.float32, [None, 28, 28, 1])
   label = tf.placeholder(tf.int32, [None, 1]) # 0 if same, 1 if different
