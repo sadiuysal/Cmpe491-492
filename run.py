@@ -142,28 +142,6 @@ def display_aug_images():
     plt.show(augmented_image[0],block=True)
     plt.axis("off")
 
-
-
-def contrastive_loss(y_train, x_train):
-  import tensorflow.compat.v1 as tf_v1
-  tf_v1.disable_v2_behavior() 
-  left = tf_v1.placeholder(tf.float32, [None, 32, 32, 3])
-  right = tf_v1.placeholder(tf.float32, [None, 32, 32, 3])
-  label = tf_v1.placeholder(tf.int32, [None, 1]) # 0 if same, 1 if different
-  margin = 0.2
-
-  left_output = model(left)  # shape [None, 128]
-  right_output = model(right)  # shape [None, 128]
-
-  d = tf.reduce_sum(tf.square(left_output - right_output), 1)
-  d_sqrt = tf.sqrt(d)
-
-  loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
-
-  loss = 0.5 * tf.reduce_mean(loss)
-  return loss
-
-
 """For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 
 #predictions = model(tf.expand_dims(x_train_sets[0],0)).numpy()
@@ -188,8 +166,9 @@ elif func_name=="d":
 elif func_name=="resize":
   resize_and_rescale()"""
 
+tf.compat.v1.enable_eager_execution()
 #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-loss_fn = contrastive_loss
+loss_fn = obj_lib.contrastive_loss
 
 """This loss is equal to the negative log probability of the true class:
 It is zero if the model is sure of the correct class.

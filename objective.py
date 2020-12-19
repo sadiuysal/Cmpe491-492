@@ -24,6 +24,7 @@ LARGE_NUM = 1e9
 
 def contrastive_loss(y_train, x_train): 
   import run
+  tf.compat.v1.enable_eager_execution()
   left = tf.keras.Input( shape=(None, 32, 32, 3), dtype=tf.dtypes.float32)
   right = tf.keras.Input( shape=(None, 32, 32, 3), dtype=tf.dtypes.float32)
   label = tf.keras.Input( shape=(None, 1), dtype=tf.dtypes.int32)
