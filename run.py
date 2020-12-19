@@ -156,7 +156,7 @@ provide an exact and numerically stable loss calculation for all models when usi
 
 The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `True` index and returns a scalar loss for each example.
 """
-
+"""
 func_name=sys.argv[1]
 print(func_name)
 if func_name=="aug":
@@ -164,23 +164,21 @@ if func_name=="aug":
 elif func_name=="d":
   display_aug_images()
 elif func_name=="resize":
-  resize_and_rescale()
+  resize_and_rescale()"""
 
 #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-loss_fn = obj_lib.RoCL_contrastive_loss
+loss_fn = obj_lib.constrastive_loss
 
 """This loss is equal to the negative log probability of the true class:
 It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
-#print(loss_fn(y_train_sets[1], predictions))
-"""
+print(loss_fn(y_train, x_train))
 model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
 
-"""
 
 """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
 #model.fit(x_train, y_train, epochs=5)
