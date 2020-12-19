@@ -182,7 +182,7 @@ model.compile(optimizer='adam',
 
 
 """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
-model.fit(x_train, y_train, epochs=5)
+#model.fit(x_train, y_train, epochs=5)
 
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
