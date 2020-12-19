@@ -22,7 +22,7 @@ FLAGS = flags.FLAGS
 import run
 LARGE_NUM = 1e9
 
-def constrastive_loss(y_train, x_train):
+def contrastive_loss(y_train, x_train):
   left = tf.placeholder(tf.float32, [None, 28, 28, 1])
   right = tf.placeholder(tf.float32, [None, 28, 28, 1])
   label = tf.placeholder(tf.int32, [None, 1]) # 0 if same, 1 if different
@@ -38,7 +38,7 @@ def constrastive_loss(y_train, x_train):
 
   loss = 0.5 * tf.reduce_mean(loss)
   return loss
-  
+
 def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
   batch_size=int(tf.shape(outputs)[0])
   print()
