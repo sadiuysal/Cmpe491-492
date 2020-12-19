@@ -29,7 +29,7 @@ def contrastive_loss(y_train, x_train):
   label = tf.keras.Input( shape=(None, 1), dtype=tf.dtypes.int32)
 
   margin = 0.2
-
+  print(tf.shape(left))
   left_output = run.model(left)  # shape [None, 128]
   right_output = run.model(right)  # shape [None, 128]
 
