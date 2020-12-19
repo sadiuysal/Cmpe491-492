@@ -17,7 +17,8 @@
 
 from absl import flags
 import data_util
-import tensorflow.compat.v2 as tf
+#import tensorflow.compat.v2 as tf
+import tensorflow as tf
 FLAGS = flags.FLAGS
 LARGE_NUM = 1e9
 
