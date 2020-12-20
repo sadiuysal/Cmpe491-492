@@ -22,7 +22,7 @@ import tensorflow as tf
 FLAGS = flags.FLAGS
 LARGE_NUM = 1e9
 
-def contrastive_loss(ind , x ,temperature=0.5): 
+def contrastive_loss(ind , x ,temperature=1): 
   import run
   # tf.compat.v1.enable_eager_execution()
   x=tf.expand_dims(x, 0)
