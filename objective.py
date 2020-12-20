@@ -40,7 +40,7 @@ def contrastive_loss(ind , output , temperature=1 ):
   print(tf.shape(z_prime_x))
 
   #print(model_class.vector_mappings)
-  function_to_map = lambda x: tf.math.exp(data_util.sim_with_temperature(output ,x ,temperature)) 
+  function_to_map = lambda y : tf.math.exp(data_util.sim_with_temperature(output ,y ,temperature)) 
   exponential_sim_matrix = tf.map_fn(function_to_map, model_class.vector_mappings , dtype=tf.float32)
   z_neg_sum = tf.reduce_sum(exponential_sim_matrix)-exponential_sim_matrix[ind]
   z_pos_sum = tf.math.exp(data_util.sim_with_temperature(output ,z_prime_x ,temperature))
