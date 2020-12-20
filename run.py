@@ -141,7 +141,7 @@ def run_model():
   """
 
 
-print(loss_fn(indicies[0], x_train[0]))
+#print(loss_fn(indicies[0], x_train[0]))
 run_model()
 
 
