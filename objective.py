@@ -45,8 +45,13 @@ def contrastive_loss(ind , x ,temperature=0.5):
   #print(tf.shape(left))
   left_output = run.model(t_x)  # shape [None, 128]
   right_output = run.model(t_prime_x)  # shape [None, 128]
+  print("left_out shape : ")
+  print(tf.shape(left_output))
+  print("right_out shape: ")
+  print(tf.shape(right_output))
 
-  d = tf.reduce_sum(tf.square(left_output - right_output), 1)
+  d = data_util.sim_with_temperature(left_output,right_output,temperature)
+  print("cosine sim : " + str(d) )
   d_sqrt = tf.sqrt(d)
 
   loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
