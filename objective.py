@@ -29,7 +29,8 @@ def contrastive_loss(ind , output , temperature=1 ):
   #mask=tf.one_hot(ind, depth = batch_size , on_value=0, off_value=1)[0]
   #t_x=model_class.data_augmentation(x)
   t_prime_x=model_class.data_augmentation(x)
-  #print("index : "+ str(ind))
+  print("index : ")
+  print(ind)
   #print("x shape : ")
   #print(tf.shape(t_x))
   #z_x = model_class.model(t_x)  # shape [None, 10] for now
@@ -43,7 +44,7 @@ def contrastive_loss(ind , output , temperature=1 ):
   function_to_map = lambda y : tf.math.exp(data_util.sim_with_temperature(output ,y ,temperature)) 
   exponential_sim_matrix = tf.map_fn(function_to_map, model_class.vector_mappings , dtype=tf.float32)
   print(tf.shape(exponential_sim_matrix))
-  z_neg_sum = tf.reduce_sum(exponential_sim_matrix) - exponential_sim_matrix[ind].numpy()
+  z_neg_sum = tf.reduce_sum(exponential_sim_matrix) - exponential_sim_matrix[ind]
   z_pos_sum = tf.math.exp(data_util.sim_with_temperature(output ,z_prime_x ,temperature))
   loss = - tf.math.log(z_pos_sum / (z_pos_sum+z_neg_sum) )
   print(z_neg_sum)
