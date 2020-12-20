@@ -19,14 +19,13 @@ from absl import flags
 import data_util
 #import tensorflow.compat.v2 as tf
 import tensorflow as tf
-FLAGS = flags.FLAGS
-LARGE_NUM = 1e9
+
 
 def contrastive_loss(ind , x , temperature=1 ): 
   import run
   batch_size=run.batch_size
-  mask=tf.ones(shape=[batch_size], dtype=tf.dtypes.float32)
-  mask[ind]=0
+  mask=tf.one_hot([ind], depth = 1 , on_value=1, off_value=0)
+  print(mask)
   x=tf.expand_dims(x, 0)
   t_x=run.data_augmentation(x)
   t_prime_x=run.data_augmentation(x)
