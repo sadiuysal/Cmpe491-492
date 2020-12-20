@@ -24,7 +24,7 @@ import model as model_class
  
 def contrastive_loss(ind , output , temperature=1 ): 
   print("***************-1")
-  print(tf.trainable_variables())
+  print(tf.variable())
   x = tf.gather(model_class.x_train, ind)[0]
   #batch_size=model_class.batch_size
   #mask=tf.one_hot(ind, depth = batch_size , on_value=0, off_value=1)[0]
