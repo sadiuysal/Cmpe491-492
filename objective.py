@@ -23,6 +23,9 @@ import model as model_class
 
 
 def contrastive_loss(ind , x , temperature=1 ): 
+  print(ind)
+  print(x)
+  print("***************")
   
   batch_size=model_class.batch_size
   mask=tf.one_hot([ind], depth = batch_size , on_value=0, off_value=1)
