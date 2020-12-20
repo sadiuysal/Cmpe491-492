@@ -30,6 +30,7 @@ import numpy as np
 import sys
 import model as model_class
 
+tf.config.run_functions_eagerly(True)
 
 x_train, x_test = model_class.x_train , model_class.x_test
 
