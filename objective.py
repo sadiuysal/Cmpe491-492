@@ -27,7 +27,8 @@ def contrastive_loss(ind , x ,temperature=0.5):
   print("x shape : ")
   print(tf.shape(x))
   import run
-  tf.compat.v1.enable_eager_execution()
+  # tf.compat.v1.enable_eager_execution()
+  x=tf.expand_dims(x, 0)
   t_x=run.data_augmentation(x)
   t_prime_x=run.data_augmentation(x)
 
