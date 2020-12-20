@@ -32,16 +32,20 @@ def contrastive_loss(ind , output , temperature=1 ):
   print("index : "+ str(ind))
   print("x shape : ")
   print(tf.shape(t_x))
-  left_output = model_class.model(t_x)  # shape [None, 10] for now
-  right_output = model_class.model(t_prime_x)  # shape [None, 10] for now
-  print("left_out shape : ")
-  print(tf.shape(left_output))
-  print("right_out shape: ")
-  print(tf.shape(right_output))
-  d = data_util.sim_with_temperature(left_output ,right_output ,temperature)
+  z_x = model_class.model(t_x)  # shape [None, 10] for now
+  z_prime_x = model_class.model(t_prime_x)  # shape [None, 10] for now
+  print("z(x) shape : ")
+  print(tf.shape(z_x))
+  print("z'(x) shape: ")
+  print(tf.shape(z_prime_x))
+  d = data_util.sim_with_temperature(z_x ,z_prime_x ,temperature)
   print("cosine sim : " + str(d) )
 
   print(model_class.vector_mappings)
+  function_to_map = lambda x: tf.math.exp(data_util.sim_with_temperature(z_x ,x ,temperature)) 
+  exponential_sim_matrix = tf.map_fn(function_to_map, model_class.vector_mappings , dtype=tf.float32)
+  print(exponential_sim_matrix)
+
   #d_sqrt = tf.sqrt(d)
 
   #loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
