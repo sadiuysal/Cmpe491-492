@@ -27,25 +27,21 @@ def contrastive_loss(ind , output , temperature=1 ):
   x = tf.gather(model_class.x_train, ind)[0]
   batch_size=model_class.batch_size
   mask=tf.one_hot(ind, depth = batch_size , on_value=0, off_value=1)[0]
-  print(x)
-  print("*****-2")
-  print(mask)
   t_x=model_class.data_augmentation(x)
   t_prime_x=model_class.data_augmentation(x)
   print("index : "+ str(ind))
   print("x shape : ")
   print(tf.shape(t_x))
-
-  left_output = model_class.model(t_x)  # shape [None, 128]
-  right_output = model_class.model(t_prime_x)  # shape [None, 128]
+  left_output = model_class.model(t_x)  # shape [None, 10] for now
+  right_output = model_class.model(t_prime_x)  # shape [None, 10] for now
   print("left_out shape : ")
   print(tf.shape(left_output))
   print("right_out shape: ")
   print(tf.shape(right_output))
-
   d = data_util.sim_with_temperature(left_output ,right_output ,temperature)
   print("cosine sim : " + str(d) )
 
+  print(model_class.vector_mappings)
   #d_sqrt = tf.sqrt(d)
 
   #loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
