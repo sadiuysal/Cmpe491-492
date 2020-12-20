@@ -50,9 +50,9 @@ def contrastive_loss(ind , x , temperature=1 ):
   #loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
 
   #loss = 0.5 * tf.reduce_mean(loss)
-  loss=d
+  loss=1-d
   print("Loss  : " + str(loss))
-  return 1-loss
+  return loss
 
 def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
   batch_size=int(tf.shape(outputs)[0])
