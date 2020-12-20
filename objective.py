@@ -23,9 +23,6 @@ FLAGS = flags.FLAGS
 LARGE_NUM = 1e9
 
 def contrastive_loss(ind , x ,temperature=0.5): 
-  print("index : "+ str(ind))
-  print("x shape : ")
-  print(tf.shape(x))
   import run
   # tf.compat.v1.enable_eager_execution()
   x=tf.expand_dims(x, 0)
@@ -36,6 +33,9 @@ def contrastive_loss(ind , x ,temperature=0.5):
   right = tf.keras.Input( shape=(32, 32, 3), dtype=tf.dtypes.float32)
   label = tf.keras.Input( shape=(1), dtype=tf.dtypes.float32)
 
+  print("index : "+ str(ind))
+  print("x shape : ")
+  print(tf.shape(x))
   print("left shape : ")
   print(tf.shape(left))
   print("label shape: ")
