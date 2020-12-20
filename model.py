@@ -51,7 +51,7 @@ model = tf.keras.models.Sequential([
 
 
 function_to_map = lambda x: model(tf.expand_dims(x, 0)) #map training data to initial model vectors 
-vector_mappings = tf.map_fn(function_to_map, x_train , dtype=tf.float64)
+vector_mappings = tf.map_fn(function_to_map, x_train , dtype=tf.float32)
 
 """import tensorflow as tf
 from tensorflow import keras
