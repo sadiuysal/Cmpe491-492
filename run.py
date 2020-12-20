@@ -31,14 +31,7 @@ import sys
 import model as model_class
 
 
-"""Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
-
-#mnist = tf.keras.datasets.mnist
-cifar10 = tf.keras.datasets.cifar10
-
-(x_train, y_train), (x_test, y_test) = cifar10.load_data()
-x_train, y_train, x_test, y_test = x_train[-1000:] , y_train[-1000:], x_test[-1000:], y_test[-1000:]
-x_train, x_test = x_train / 255.0, x_test / 255.0
+x_train, x_test = model_class.x_train , model_class.x_test
 
 batch_size=tf.shape(x_train)[0]
 indicies=np.array([i for i in range(batch_size)]).reshape((batch_size, 1))
@@ -115,6 +108,7 @@ It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
+
 
 def run_model():
   #tf.compat.v1.enable_eager_execution()
