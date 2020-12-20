@@ -28,7 +28,7 @@ import data_util
 import tensorflow as tf
 import numpy as np
 import sys
-import model
+import model as model_class
 
 
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
@@ -46,36 +46,17 @@ indicies=np.array([i for i in range(batch_size)]).reshape((batch_size, 1))
 
 IMG_SIZE=tf.shape(x_train)[1]
 #resize_and_scale with layers
-resize_and_rescale = tf.keras.Sequential([
-  layers.experimental.preprocessing.Resizing(IMG_SIZE, IMG_SIZE),
-  layers.experimental.preprocessing.Rescaling(1./255)
-])
+resize_and_rescale = model_class.resize_and_rescale
 #data augmentation layers
-data_augmentation = tf.keras.Sequential([
-  layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-  layers.experimental.preprocessing.RandomRotation(0.2),
-])
+data_augmentation = model_class.data_augmentation
 
 
 
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
-model = tf.keras.models.Sequential([
-  ##resize_and_rescale,
-  #data_augmentation,
-  tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
-  tf.keras.layers.MaxPooling2D((2, 2)),
-  tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-  tf.keras.layers.Flatten(),
-  tf.keras.layers.Dense(64, activation='relu'),
-  tf.keras.layers.Dropout(0.2),
-  tf.keras.layers.Dense(10)
-])
+model = model_class.model
 
-model.summary
-
-  
 
 
 def prepare(ds=x_train, shuffle=False, augment=True,batch_size = 32):
@@ -123,20 +104,7 @@ provide an exact and numerically stable loss calculation for all models when usi
 
 The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `True` index and returns a scalar loss for each example.
 """
-"""
-import numpy as np
 
-# Construct and compile an instance of CustomModel
-inputs = keras.Input(shape=(32,))
-outputs = keras.layers.Dense(1)(inputs)
-model = CustomModel(inputs, outputs)
-model.compile(optimizer="adam", loss="mse", metrics=["mae"])
-
-# Just use `fit` as usual
-x = np.random.random((1000, 32))
-y = np.random.random((1000, 1))
-model.fit(x, y, epochs=3)
-"""
 
 
 #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
