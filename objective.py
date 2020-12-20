@@ -22,9 +22,11 @@ import tensorflow as tf
 FLAGS = flags.FLAGS
 LARGE_NUM = 1e9
 
-def contrastive_loss(ind , x ,temperature=1): 
+def contrastive_loss(ind , x , temperature=1 ): 
   import run
-  # tf.compat.v1.enable_eager_execution()
+  batch_size=run.batch_size
+  mask=tf.ones(shape=[batch_size], dtype=tf.dtypes.float32)
+  mask[ind]=0
   x=tf.expand_dims(x, 0)
   t_x=run.data_augmentation(x)
   t_prime_x=run.data_augmentation(x)
@@ -52,11 +54,13 @@ def contrastive_loss(ind , x ,temperature=1):
 
   d = data_util.sim_with_temperature(left_output[0],right_output[0],temperature)
   print("cosine sim : " + str(d) )
-  d_sqrt = tf.sqrt(d)
 
-  loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
+  #d_sqrt = tf.sqrt(d)
 
-  loss = 0.5 * tf.reduce_mean(loss)
+  #loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
+
+  #loss = 0.5 * tf.reduce_mean(loss)
+  loss=d
   print("Loss  : " + str(loss))
   return loss
 
