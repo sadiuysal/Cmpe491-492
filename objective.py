@@ -24,26 +24,16 @@ import tensorflow as tf
 def contrastive_loss(ind , x , temperature=1 ): 
   import run
   batch_size=run.batch_size
-  mask=1-tf.one_hot([ind], depth = batch_size , on_value=1, off_value=0)
+  mask=tf.one_hot([ind], depth = batch_size , on_value=0, off_value=1)
   print(mask)
   x=tf.expand_dims(x, 0)
   t_x=run.data_augmentation(x)
   t_prime_x=run.data_augmentation(x)
 
-  left = tf.keras.Input( shape=(32, 32, 3), dtype=tf.dtypes.float32)
-  right = tf.keras.Input( shape=(32, 32, 3), dtype=tf.dtypes.float32)
-  label = tf.keras.Input( shape=(1), dtype=tf.dtypes.float32)
-
   print("index : "+ str(ind))
   print("x shape : ")
   print(tf.shape(x))
-  print("left shape : ")
-  print(tf.shape(left))
-  print("label shape: ")
-  print(tf.shape(label))
 
-  margin = 0.2
-  #print(tf.shape(left))
   left_output = run.model(t_x)  # shape [None, 128]
   right_output = run.model(t_prime_x)  # shape [None, 128]
   print("left_out shape : ")
@@ -61,7 +51,7 @@ def contrastive_loss(ind , x , temperature=1 ):
   #loss = 0.5 * tf.reduce_mean(loss)
   loss=d
   print("Loss  : " + str(loss))
-  return loss
+  return 1-loss
 
 def RoCL_contrastive_loss(y_train_sets,outputs, temperature=0.5):
   batch_size=int(tf.shape(outputs)[0])

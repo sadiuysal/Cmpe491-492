@@ -147,16 +147,14 @@ It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
-print(loss_fn(indicies[0], x_train[0]))
 
 def run_model():
-  tf.compat.v1.enable_eager_execution()
+  #tf.compat.v1.enable_eager_execution()
   model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
   model.fit(x_train, indicies, epochs=5)
-
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)
@@ -174,6 +172,9 @@ def run_model():
   probability_model(x_test[:5])
   """
 
+
+print(loss_fn(indicies[0], x_train[0]))
+run_model()
 
 
 
