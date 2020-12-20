@@ -135,8 +135,8 @@ def run_model():
   """
 
 #x=tf.expand_dims(x, 0)
-print(loss_fn(tf.expand_dims(indicies[0], 0), model(tf.expand_dims(x_train[0], 0) )))
-#run_model()
+#print(loss_fn(tf.expand_dims(indicies[0], 0), model(tf.expand_dims(x_train[0], 0) )))
+run_model()
 
 
 
