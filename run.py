@@ -21,23 +21,6 @@ Original file is located at
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""# TensorFlow 2 quickstart for beginners
-
-This short introduction uses [Keras](https://www.tensorflow.org/guide/keras/overview) to:
-
-1. Build a neural network that classifies images.
-2. Train this neural network.
-3. And, finally, evaluate the accuracy of the model.
-
-This is a [Google Colaboratory](https://colab.research.google.com/notebooks/welcome.ipynb) notebook file. Python programs are run directly in the browser—a great way to learn and use TensorFlow. To follow this tutorial, run the notebook in Google Colab by clicking the button at the top of this page.
-
-1. In Colab, connect to a Python runtime: At the top-right of the menu bar, select *CONNECT*.
-2. Run all the notebook code cells: Select *Runtime* > *Run all*.
-
-Download and install TensorFlow 2. Import TensorFlow into your program:
-
-Note: Upgrade `pip` to install the TensorFlow 2 package. See the [install guide](https://www.tensorflow.org/install) for details.
-"""
 import matplotlib.pyplot as plt
 from tensorflow.keras import layers
 import objective as obj_lib
@@ -45,6 +28,7 @@ import data_util
 import tensorflow as tf
 import numpy as np
 import sys
+import model
 
 
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
@@ -112,27 +96,6 @@ def prepare(ds=x_train, shuffle=False, augment=True,batch_size = 32):
 
   # Use buffered prefecting on all datasets
   return ds.prefetch(buffer_size=AUTOTUNE)
-  """
-  dataset_size=int(tf.shape(x_train)[0])
-  print(tf.shape(x_train))
-  print(tf.shape(y_train))
-  #y_train_sets=[0 for i in range(dataset_size)]
-  x_train_sets=np.empty([dataset_size, tf.shape(x_train)[1] , tf.shape(x_train)[2] , tf.shape(x_train)[3] ])
-  y_train_sets=np.empty([dataset_size, 10 ])
-
-  #y_train_sets=[0 for i in range(dataset_size)]
-  #x_train_sets=[0 for i in range(dataset_size)]
-  for ind in range(dataset_size):
-    if ind%1000==0:
-      print(ind)
-    x=x_train[ind]
-    width,height = tf.shape(x)[0],tf.shape(x)[1]
-    t_x=data_util.preprocess_for_train(x,height,width)
-    x_train_sets[ind] = t_x
-    t_prime_x=tf.expand_dims(data_util.preprocess_for_train(x,height,width),0)
-    y_train_sets[ind] = model(t_prime_x)
-  return x_train_sets , y_train_sets
-  """
 
 def display_aug_images():
   image=x_train[0]
@@ -161,16 +124,21 @@ provide an exact and numerically stable loss calculation for all models when usi
 The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `True` index and returns a scalar loss for each example.
 """
 """
-func_name=sys.argv[1]
-print(func_name)
-if func_name=="aug":
-  data_augmentation()
-elif func_name=="d":
-  display_aug_images()
-elif func_name=="resize":
-  resize_and_rescale()"""
+import numpy as np
 
-tf.compat.v1.enable_eager_execution()
+# Construct and compile an instance of CustomModel
+inputs = keras.Input(shape=(32,))
+outputs = keras.layers.Dense(1)(inputs)
+model = CustomModel(inputs, outputs)
+model.compile(optimizer="adam", loss="mse", metrics=["mae"])
+
+# Just use `fit` as usual
+x = np.random.random((1000, 32))
+y = np.random.random((1000, 1))
+model.fit(x, y, epochs=3)
+"""
+
+
 #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 loss_fn = obj_lib.contrastive_loss
 
@@ -180,27 +148,32 @@ It is zero if the model is sure of the correct class.
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
 print(loss_fn(indicies[0], x_train[0]))
-model.compile(optimizer='adam',
+
+def run_model():
+  tf.compat.v1.enable_eager_execution()
+  model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
+  """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
+  model.fit(x_train, indicies, epochs=5)
+
+  """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
+
+  #model.evaluate(x_test,  y_test, verbose=2)
+
+  """The image classifier is now trained to ~98% accuracy on this dataset. To learn more, read the [TensorFlow tutorials](https://www.tensorflow.org/tutorials/).
+
+  If you want your model to return a probability, you can wrap the trained model, and attach the softmax to it:
+  """
+  """
+  probability_model = tf.keras.Sequential([
+    model,
+    tf.keras.layers.Softmax()
+  ])
+
+  probability_model(x_test[:5])
+  """
 
 
-""" The `Model.fit` method adjusts the model parameters to minimize the loss: """
-model.fit(x_train, indicies, epochs=5)
 
-"""The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
-#model.evaluate(x_test,  y_test, verbose=2)
-
-"""The image classifier is now trained to ~98% accuracy on this dataset. To learn more, read the [TensorFlow tutorials](https://www.tensorflow.org/tutorials/).
-
-If you want your model to return a probability, you can wrap the trained model, and attach the softmax to it:
-"""
-"""
-probability_model = tf.keras.Sequential([
-  model,
-  tf.keras.layers.Softmax()
-])
-
-probability_model(x_test[:5])
-"""
