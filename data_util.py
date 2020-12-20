@@ -14,6 +14,6 @@ def sim_with_temperature(x,y,temperature):
   #cos_sim=1 - spatial.distance.cosine(x, y)
   m = tf.keras.metrics.CosineSimilarity(axis=1)
   m.update_state(x, y)
-  return m.result().numpy()
+  return m.result()
   #return cos_sim/temperature
 
