@@ -3,7 +3,7 @@
 import functools
 import numpy as np
 import tensorflow as tf
-
+from scipy import spatial
 
 
 
@@ -11,7 +11,7 @@ import tensorflow as tf
 def sim_with_temperature(x,y,temperature):
   print(x)
   print(y)
-  cos_sim=np.dot(x,y)/(np.linalg.norm(x)*np.linalg.norm(y))
+  cos_sim=1 - spatial.distance.cosine(x, y)
   """m = tf.keras.metrics.CosineSimilarity(axis=1)
   m.update_state(x, y)"""
   return cos_sim/temperature
