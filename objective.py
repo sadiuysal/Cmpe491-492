@@ -22,17 +22,28 @@ import tensorflow as tf
 FLAGS = flags.FLAGS
 LARGE_NUM = 1e9
 
-def contrastive_loss(y_train, x_train): 
+def contrastive_loss(ind , x ,temperature=0.5): 
+  print("index : "+ str(ind))
+  print("x shape : ")
+  print(tf.shape(x))
   import run
   tf.compat.v1.enable_eager_execution()
+  t_x=run.data_augmentation(x)
+  t_prime_x=run.data_augmentation(x)
+
   left = tf.keras.Input( shape=(32, 32, 3), dtype=tf.dtypes.float32)
   right = tf.keras.Input( shape=(32, 32, 3), dtype=tf.dtypes.float32)
   label = tf.keras.Input( shape=(1), dtype=tf.dtypes.float32)
 
-  margin = 0.2
+  print("left shape : ")
   print(tf.shape(left))
-  left_output = run.model(left)  # shape [None, 128]
-  right_output = run.model(right)  # shape [None, 128]
+  print("label shape: ")
+  print(tf.shape(label))
+
+  margin = 0.2
+  #print(tf.shape(left))
+  left_output = run.model(t_x)  # shape [None, 128]
+  right_output = run.model(t_prime_x)  # shape [None, 128]
 
   d = tf.reduce_sum(tf.square(left_output - right_output), 1)
   d_sqrt = tf.sqrt(d)

@@ -56,6 +56,10 @@ cifar10 = tf.keras.datasets.cifar10
 x_train, y_train, x_test, y_test = x_train[-1000:] , y_train[-1000:], x_test[-1000:], y_test[-1000:]
 #x_train, x_test = x_train / 255.0, x_test / 255.0
 
+batch_size=tf.shape(x_train)[0]
+indicies=np.array([i for i in range(batch_size)]).reshape((batch_size, 1))
+
+
 IMG_SIZE=tf.shape(x_train)[1]
 #resize_and_scale with layers
 resize_and_rescale = tf.keras.Sequential([
@@ -175,14 +179,14 @@ It is zero if the model is sure of the correct class.
 
 This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
 """
-print(loss_fn(y_train, x_train))
+print(loss_fn(indicies[0], x_train[0]))
 model.compile(optimizer='adam',
               loss=loss_fn,
               metrics=['accuracy'])
 
 
 """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
-#model.fit(x_train, y_train, epochs=5)
+model.fit(x_train, indicies, epochs=5)
 
 """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
