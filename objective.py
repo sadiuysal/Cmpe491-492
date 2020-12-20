@@ -35,7 +35,7 @@ def contrastive_loss(ind , output , temperature=1 ):
   t_prime_x=model_class.data_augmentation(x)
   print("index : "+ str(ind))
   print("x shape : ")
-  print(tf.shape(x))
+  print(tf.shape(t_x))
 
   left_output = model_class.model(t_x)  # shape [None, 128]
   right_output = model_class.model(t_prime_x)  # shape [None, 128]
@@ -44,7 +44,7 @@ def contrastive_loss(ind , output , temperature=1 ):
   print("right_out shape: ")
   print(tf.shape(right_output))
 
-  d = data_util.sim_with_temperature(left_output[0],right_output[0],temperature)
+  d = data_util.sim_with_temperature(left_output[0].numpy(),right_output[0].numpy(),temperature)
   print("cosine sim : " + str(d) )
 
   #d_sqrt = tf.sqrt(d)
