@@ -21,7 +21,7 @@ import data_util
 import tensorflow as tf
 import model as model_class
 
-
+ 
 def contrastive_loss(ind , output , temperature=1 ): 
   print("***************-1")
   x = tf.gather(model_class.x_train, ind)[0]
@@ -30,7 +30,6 @@ def contrastive_loss(ind , output , temperature=1 ):
   print(x)
   print("*****-2")
   print(mask)
-  #x=tf.expand_dims(x, 0)
   t_x=model_class.data_augmentation(x)
   t_prime_x=model_class.data_augmentation(x)
   print("index : "+ str(ind))

@@ -134,8 +134,8 @@ def run_model():
   probability_model(x_test[:5])
   """
 
-
-print(loss_fn(indicies[0], x_train[0]))
+#x=tf.expand_dims(x, 0)
+print(loss_fn(tf.expand_dims(indicies[0], 0), tf.expand_dims(x_train[0], 0) ))
 #run_model()
 
 
