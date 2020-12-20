@@ -38,8 +38,8 @@ data_augmentation = tf.keras.Sequential([
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model = tf.keras.models.Sequential([
-  ##resize_and_rescale,
-  #data_augmentation,
+  resize_and_rescale,
+  data_augmentation,
   tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),

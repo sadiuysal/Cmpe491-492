@@ -116,7 +116,7 @@ def run_model():
               loss=loss_fn,
               metrics=['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
-  model.fit(x_train, indicies, epochs=5)
+  model.fit(data_augmentation(x_train), indicies, epochs=5)
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)

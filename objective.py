@@ -25,33 +25,28 @@ import model as model_class
 def contrastive_loss(ind , output , temperature=1 ): 
   print("***************-1")
   x = tf.gather(model_class.x_train, ind)[0]
-  batch_size=model_class.batch_size
-  mask=tf.one_hot(ind, depth = batch_size , on_value=0, off_value=1)[0]
-  t_x=model_class.data_augmentation(x)
+  #batch_size=model_class.batch_size
+  #mask=tf.one_hot(ind, depth = batch_size , on_value=0, off_value=1)[0]
+  #t_x=model_class.data_augmentation(x)
   t_prime_x=model_class.data_augmentation(x)
-  print("index : "+ str(ind))
-  print("x shape : ")
-  print(tf.shape(t_x))
-  z_x = model_class.model(t_x)  # shape [None, 10] for now
+  #print("index : "+ str(ind))
+  #print("x shape : ")
+  #print(tf.shape(t_x))
+  #z_x = model_class.model(t_x)  # shape [None, 10] for now
   z_prime_x = model_class.model(t_prime_x)  # shape [None, 10] for now
-  print("z(x) shape : ")
-  print(tf.shape(z_x))
+  #print("z(x) shape : ")
+  #print(tf.shape(z_x))
   print("z'(x) shape: ")
   print(tf.shape(z_prime_x))
-  d = data_util.sim_with_temperature(z_x ,z_prime_x ,temperature)
-  print("cosine sim : " + str(d) )
 
-  print(model_class.vector_mappings)
-  function_to_map = lambda x: tf.math.exp(data_util.sim_with_temperature(z_x ,x ,temperature)) 
+  #print(model_class.vector_mappings)
+  function_to_map = lambda x: tf.math.exp(data_util.sim_with_temperature(output ,x ,temperature)) 
   exponential_sim_matrix = tf.map_fn(function_to_map, model_class.vector_mappings , dtype=tf.float32)
-  print(exponential_sim_matrix)
-
-  #d_sqrt = tf.sqrt(d)
-
-  #loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
-
-  #loss = 0.5 * tf.reduce_mean(loss)
-  loss=1-d
+  z_neg_sum = tf.reduce_sum(exponential_sim_matrix)-exponential_sim_matrix[ind]
+  z_pos_sum = tf.math.exp(data_util.sim_with_temperature(output ,z_prime_x ,temperature))
+  loss = - tf.math.log(z_pos_sum / (z_pos_sum+z_neg_sum) )
+  print(z_neg_sum)
+  print(z_pos_sum)
   print("Loss  : " + str(loss))
   return loss
 
