@@ -20,7 +20,7 @@ Original file is located at
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import keras as keras
 import matplotlib.pyplot as plt
 from tensorflow.keras import layers
 import objective as obj_lib
@@ -29,12 +29,13 @@ import tensorflow as tf
 import numpy as np
 import sys
 import model as model_class
+from tensorflow import keras
 
 tf.config.run_functions_eagerly(True)
 
 x_train, x_test = model_class.x_train , model_class.x_test
 
-batch_size=tf.shape(x_train)[0]
+batch_size=64
 indicies=np.array([i for i in range(batch_size)]).reshape((batch_size, 1))
 
 
@@ -44,12 +45,9 @@ resize_and_rescale = model_class.resize_and_rescale
 #data augmentation layers
 data_augmentation = model_class.data_augmentation
 
-
-
-
+inputs=keras.Input(shape=(32, 32, 3))
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
-
-model = model_class.model
+model = model_class.CustomModel(inputs,model_class.model_layers(inputs))
 
 
 
@@ -84,40 +82,12 @@ def display_aug_images():
     plt.show(augmented_image[0],block=True)
     plt.axis("off")
 
-"""For each example the model returns a vector of "[logits](https://developers.google.com/machine-learning/glossary#logits)" or "[log-odds](https://developers.google.com/machine-learning/glossary#log-odds)" scores, one for each class."""
 
-#predictions = model(tf.expand_dims(x_train_sets[0],0)).numpy()
-#predictions
-
-"""The `tf.nn.softmax` function converts these logits to "probabilities" for each class: """
-
-#tf.nn.softmax(predictions).numpy()
-
-"""Note: It is possible to bake this `tf.nn.softmax` in as the activation function for the last layer of the network. While this can make the model output more directly interpretable, this approach is discouraged as it's impossible to
-provide an exact and numerically stable loss calculation for all models when using a softmax output.
-
-The `losses.SparseCategoricalCrossentropy` loss takes a vector of logits and a `True` index and returns a scalar loss for each example.
-"""
-
-
-
-#loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-loss_fn = obj_lib.contrastive_loss
-
-"""This loss is equal to the negative log probability of the true class:
-It is zero if the model is sure of the correct class.
-
-This untrained model gives probabilities close to random (1/10 for each class), so the initial loss should be close to `-tf.log(1/10) ~= 2.3`.
-"""
-
-
-def run_model():
-  #tf.compat.v1.enable_eager_execution()
-  model.compile(optimizer='adam',
-              loss=loss_fn,
-              metrics=['accuracy'])
+loss_fn = obj_lib.contrastive_Loss
+def train():
+  model.compile(optimizer='adam') # ['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
-  model.fit(data_augmentation(x_train), indicies, epochs=1)
+  model.fit(x_train, epochs=5 , batch_size=batch_size)
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)
@@ -134,10 +104,11 @@ def run_model():
 
   probability_model(x_test[:5])
   """
+input=tf.slice(x_train,[0,0,0,0],[ batch_size ,-1 ,-1 ,-1 ])
+input_2N=tf.concat([input, input], 0)
 
-#x=tf.expand_dims(x, 0)
-#print(loss_fn(tf.expand_dims(indicies[0], 0), model(tf.expand_dims(x_train[0], 0) )))
-run_model()
+#print(loss_fn(model(input_2N)))
+train()
 
 
 

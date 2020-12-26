@@ -15,16 +15,33 @@
 # ==============================================================================
 """Contrastive loss functions."""
 
-from absl import flags
 import data_util
-#import tensorflow.compat.v2 as tf
 import tensorflow as tf
 import model as model_class
 
- 
+
+# outputs is 2N*d
+def contrastive_Loss( outputs , temperature= 1 ):
+  N=int(tf.shape(outputs)[0]/2)
+  #print("N : " + str(N))
+  #print("outputs.shape : " + str(tf.shape(outputs)))
+  z_x=tf.slice(outputs,[ 0,0 ],[ N ,-1 ])
+  #print(tf.shape(z_x))
+  z_prime_x= tf.slice(outputs,[ N,0 ],[ -1 , -1 ])
+
+  #print(str(tf.shape(z_x)) + "  &&&&&&&&&&&&  " + str(tf.shape(z_prime_x) ))
+  sim_matrix=data_util.sim_matrix_with_temperature(z_x,z_prime_x,temperature)
+  diagonal = tf.linalg.diag_part(sim_matrix)
+  diagonal = tf.math.exp(diagonal)
+  upper = tf.linalg.band_part(sim_matrix, 0, -1)
+  upper = tf.math.exp(upper)
+  pos_set = tf.math.reduce_sum(diagonal)
+  neg_set = tf.math.reduce_sum(upper)-pos_set
+  loss = - tf.math.log(pos_set / (pos_set+neg_set) )
+  return loss
+
 def contrastive_loss(ind , output , temperature=1 ): 
   print("***************-1")
-  print(tf.variable())
   x = tf.gather(model_class.x_train, ind)[0]
   #batch_size=model_class.batch_size
   #mask=tf.one_hot(ind, depth = batch_size , on_value=0, off_value=1)[0]
