@@ -38,6 +38,8 @@ IMG_SIZE=tf.shape(x_train)[1]
 resize_and_rescale = model_class.resize_and_rescale
 #data augmentation layers
 data_augmentation = model_class.data_augmentation
+#resize-scale+augmentation
+preprocess_layer = model_class.preprocess
 
 inputs=keras.Input(shape=(32, 32, 3))
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
@@ -60,7 +62,8 @@ def display_aug_images():
 def train():
   model.compile(optimizer='adam') # ['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
-  model.fit(x_train, epochs=5 , batch_size=batch_size)
+  x_train_processed=preprocess_layer(x_train)
+  model.fit(x_train_processed, epochs=5 , batch_size=batch_size)
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)

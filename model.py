@@ -24,7 +24,7 @@ cifar10 = tf.keras.datasets.cifar10
 #TODO 
 batch_size=64
 IMG_SIZE=32
-adversarial_attack=False
+adversarial_attack=True
 
 #resize_and_scale with layers
 resize_and_rescale = tf.keras.Sequential([
@@ -36,31 +36,17 @@ data_augmentation = tf.keras.Sequential([
   layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
   layers.experimental.preprocessing.RandomRotation(0.3),
 ])
-def prepare(ds=x_train, shuffle=False, augment=False,batch_size = batch_size):
-  AUTOTUNE = tf.data.experimental.AUTOTUNE
-  # Resize and rescale all datasets
-  ds = ds.map(lambda x, y: (resize_and_rescale(x), y),
-              num_parallel_calls=AUTOTUNE)
-  if shuffle:
-    ds = ds.shuffle(1000)
-
-  # Batch all datasets
-  ds = ds.batch(batch_size)
-
-  # Use data augmentation only on the training set
-  if augment:
-    ds = ds.map(lambda x, y: (data_augmentation(x, training=True), y),
-                num_parallel_calls=AUTOTUNE)
-
-  # Use buffered prefecting on all datasets
-  return ds.prefetch(buffer_size=AUTOTUNE)
-
+#resize-scale+augmentation
+preprocess = tf.keras.Sequential([
+  layers.experimental.preprocessing.Resizing(IMG_SIZE, IMG_SIZE),
+  layers.experimental.preprocessing.Rescaling(1./255),
+  layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+  layers.experimental.preprocessing.RandomRotation(0.3),
+])
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model_layers = tf.keras.Sequential([
-  resize_and_rescale,
-  data_augmentation,
   tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
@@ -78,10 +64,8 @@ class CustomModel(keras.Model):
         x = data
         x_2N = tf.concat([x, x], 0)
         if adversarial_attack:
-            target=prepare(ds=x)
-            print(tf.shape(target))
-            advinputs, adv_loss = attacks.get_loss(target=target)
-            x_3N=tf.concat([x_2N, advinputs], 0)
+            advinputs, adv_loss = attacks.get_loss(target=x)
+            #x_3N=tf.concat([x_2N, advinputs], 0)
         with tf.GradientTape() as tape:
             y_pred = self(x_2N, training=True)  # Forward pass
             # Compute the loss value

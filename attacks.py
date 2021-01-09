@@ -18,4 +18,4 @@ def create_adversarial_pattern(input_images, input_label):
   return signed_grad
 """
 def get_loss(target):
-  return
+  return 0,0
