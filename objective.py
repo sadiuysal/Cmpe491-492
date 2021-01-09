@@ -20,7 +20,8 @@ import tensorflow as tf
 
 
 # outputs is 2N*d
-def contrastive_Loss( outputs , temperature= 1 ):
+def contrastive_Loss( outputs , adversarial_selection =False , temperature= 1):
+  
   N=int(tf.shape(outputs)[0]/2)
   #print("N : " + str(N))
   #print("outputs.shape : " + str(tf.shape(outputs)))

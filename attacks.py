@@ -2,20 +2,26 @@
 import tensorflow as tf
 import objective as obj_lib
 
-loss_object = obj_lib.contrastive_Loss
 
-"""
-def create_adversarial_pattern(input_images, input_label):
+def get_adversaries( model, x ,target,epsilon):
+  print(tf.shape(x))
   with tf.GradientTape() as tape:
-    tape.watch(input_images)
-    prediction = pretrained_model(input_images)
-    loss = loss_object(input_label, prediction)
+    tape.watch(x)
+    inputs = tf.concat([x, target], 0)
+    outputs=model(inputs, training=False)
+    loss = obj_lib.contrastive_Loss(outputs)
 
+  print(loss)
   # Get the gradients of the loss w.r.t to the input image.
-  gradient = tape.gradient(loss, input_images)
+  gradient = tape.gradient(loss, x)
+  print(gradient)
   # Get the sign of the gradients to create the perturbation
   signed_grad = tf.sign(gradient)
-  return signed_grad
-"""
-def get_loss(target):
-  return 0,0
+  adv = x + (epsilon * signed_grad)
+  adversaries = tf.clip_by_value(adv, 0, 1)
+
+  inputs=tf.concat([adv, x], 0)
+  outputs = model(inputs, training=False)
+  loss = obj_lib.contrastive_Loss(outputs)
+  print(tf.shape(adversaries))
+  return adversaries,loss

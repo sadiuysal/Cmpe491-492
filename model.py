@@ -24,7 +24,9 @@ cifar10 = tf.keras.datasets.cifar10
 #TODO 
 batch_size=64
 IMG_SIZE=32
-adversarial_attack=True
+adversarial_attack=False
+epsilon=0.01
+_lambda=1
 
 #resize_and_scale with layers
 resize_and_rescale = tf.keras.Sequential([
@@ -47,6 +49,7 @@ preprocess = tf.keras.Sequential([
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model_layers = tf.keras.Sequential([
+  preprocess,
   tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
@@ -64,8 +67,8 @@ class CustomModel(keras.Model):
         x = data
         x_2N = tf.concat([x, x], 0)
         if adversarial_attack:
-            advinputs, adv_loss = attacks.get_loss(target=x)
-            #x_3N=tf.concat([x_2N, advinputs], 0)
+            adversaries, adv_loss = attacks.get_adversaries(self, x=x, target=x, epsilon=epsilon)
+            x_3N = tf.concat([x_2N, adversaries], 0)
         with tf.GradientTape() as tape:
             y_pred = self(x_2N, training=True)  # Forward pass
             # Compute the loss value
