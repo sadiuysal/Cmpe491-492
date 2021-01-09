@@ -4,6 +4,11 @@ import objective as obj_lib
 import data_util
 import tensorflow as tf
 from tensorflow import keras
+import attacks
+
+# Do the adversarial part
+# Migrate to resnet 
+
 
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
@@ -19,6 +24,7 @@ cifar10 = tf.keras.datasets.cifar10
 #TODO 
 batch_size=64
 IMG_SIZE=32
+adversarial_attack=False
 
 #resize_and_scale with layers
 resize_and_rescale = tf.keras.Sequential([
@@ -30,7 +36,24 @@ data_augmentation = tf.keras.Sequential([
   layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
   layers.experimental.preprocessing.RandomRotation(0.3),
 ])
+def prepare(ds=x_train, shuffle=False, augment=False,batch_size = batch_size):
+  AUTOTUNE = tf.data.experimental.AUTOTUNE
+  # Resize and rescale all datasets
+  ds = ds.map(lambda x, y: (resize_and_rescale(x), y),
+              num_parallel_calls=AUTOTUNE)
+  if shuffle:
+    ds = ds.shuffle(1000)
 
+  # Batch all datasets
+  ds = ds.batch(batch_size)
+
+  # Use data augmentation only on the training set
+  if augment:
+    ds = ds.map(lambda x, y: (data_augmentation(x, training=True), y),
+                num_parallel_calls=AUTOTUNE)
+
+  # Use buffered prefecting on all datasets
+  return ds.prefetch(buffer_size=AUTOTUNE)
 
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
@@ -46,7 +69,6 @@ model_layers = tf.keras.Sequential([
   #tf.keras.layers.Dropout(0.2),
   #tf.keras.layers.Dense(10)
 ])
-model_out_layer=tf.keras.layers.Flatten()
 
 loss_tracker = keras.metrics.Mean(name="loss")
 class CustomModel(keras.Model):
@@ -55,7 +77,11 @@ class CustomModel(keras.Model):
         # on what you pass to `fit()`.
         x = data
         x_2N = tf.concat([x, x], 0)
-
+        if adversarial_attack:
+            target=prepare(ds=x)
+            print(tf.shape(target))
+            advinputs, adv_loss = attacks.get_loss(target=target)
+            x_3N=tf.concat([x_2N, advinputs], 0)
         with tf.GradientTape() as tape:
             y_pred = self(x_2N, training=True)  # Forward pass
             # Compute the loss value

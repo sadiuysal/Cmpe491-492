@@ -20,23 +20,17 @@ Original file is located at
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import keras as keras
+
 import matplotlib.pyplot as plt
-from tensorflow.keras import layers
 import objective as obj_lib
-import data_util
 import tensorflow as tf
-import numpy as np
-import sys
 import model as model_class
 from tensorflow import keras
 
 tf.config.run_functions_eagerly(True)
 
 x_train, x_test = model_class.x_train , model_class.x_test
-
 batch_size=64
-indicies=np.array([i for i in range(batch_size)]).reshape((batch_size, 1))
 
 
 IMG_SIZE=tf.shape(x_train)[1]
@@ -49,26 +43,6 @@ inputs=keras.Input(shape=(32, 32, 3))
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 model = model_class.CustomModel(inputs,model_class.model_layers(inputs))
 
-
-
-def prepare(ds=x_train, shuffle=False, augment=True,batch_size = 32):
-  AUTOTUNE = tf.data.experimental.AUTOTUNE
-  # Resize and rescale all datasets
-  ds = ds.map(lambda x, y: (augment(x), y), 
-              num_parallel_calls=AUTOTUNE)
-  if shuffle:
-    ds = ds.shuffle(1000)
-
-  # Batch all datasets
-  ds = ds.batch(batch_size)
-
-  # Use data augmentation only on the training set
-  if augment:
-    ds = ds.map(lambda x, y: (data_augmentation(x, training=True), y), 
-                num_parallel_calls=AUTOTUNE)
-
-  # Use buffered prefecting on all datasets
-  return ds.prefetch(buffer_size=AUTOTUNE)
 
 def display_aug_images():
   image=x_train[0]
@@ -83,7 +57,6 @@ def display_aug_images():
     plt.axis("off")
 
 
-loss_fn = obj_lib.contrastive_Loss
 def train():
   model.compile(optimizer='adam') # ['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
@@ -104,9 +77,6 @@ def train():
 
   probability_model(x_test[:5])
   """
-input=tf.slice(x_train,[0,0,0,0],[ batch_size ,-1 ,-1 ,-1 ])
-input_2N=tf.concat([input, input], 0)
-
 #print(loss_fn(model(input_2N)))
 train()
 
