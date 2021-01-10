@@ -20,9 +20,12 @@ import tensorflow as tf
 
 
 # outputs is 2N*d
-def contrastive_Loss( outputs , adversarial_selection =False , temperature= 1):
-  
-  N=int(tf.shape(outputs)[0]/2)
+def contrastive_Loss( output , adversarial_selection =False , temperature= 1):
+
+
+  N=int(tf.shape(output)[0]/2)
+  # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.
+  outputs=tf.reshape(output, [ tf.shape(output)[0] ,tf.shape(output)[-1] ], name=None)
   #print("N : " + str(N))
   #print("outputs.shape : " + str(tf.shape(outputs)))
   z_x=tf.slice(outputs,[ 0,0 ],[ N ,-1 ])
