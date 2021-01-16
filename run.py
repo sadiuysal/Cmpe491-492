@@ -65,7 +65,7 @@ def train():
   model.compile(optimizer='adam') # ['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
   x_train_processed=preprocess_layer(x_train)
-  model.fit(x_train, epochs=3 , batch_size=batch_size)
+  model.fit(x_train, epochs=1 , batch_size=batch_size)
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)

@@ -36,7 +36,7 @@ resize_and_rescale = tf.keras.Sequential([
 #data augmentation layers
 data_augmentation = tf.keras.Sequential([
   layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-  layers.experimental.preprocessing.RandomRotation(0.3),
+  layers.experimental.preprocessing.RandomRotation(0.2),
 ])
 #resize-scale+augmentation
 preprocess = tf.keras.Sequential([
@@ -66,16 +66,22 @@ class CustomModel(keras.Model):
         # Unpack the data. Its structure depends on your model and
         # on what you pass to `fit()`.
         x = data
-        x_2N = tf.concat([x, x], 0)
+        x_2N = tf.concat([data_augmentation(x), data_augmentation(x)], 0)
         if adversarial_attack:
-            adversaries, adv_loss = attacks.get_adversaries(self, x=x, target=preprocess(x), epsilon=epsilon ,itr_count=3)
+            adversaries, adv_loss = attacks.get_adversaries(self, x=x, target=data_augmentation(x), epsilon=epsilon ,itr_count=3)
             x_3N = tf.concat([x_2N, adversaries], 0)
             #print(adv_loss)
-        with tf.GradientTape() as tape:
-            y_pred = self(x_2N, training=True)  # Forward pass
-            # Compute the loss value
-            # (the loss function is configured in `compile()`)
-            loss = obj_lib.contrastive_Loss(y_pred)
+            with tf.GradientTape() as tape:
+                y_pred = self(x_3N, training=True)  # Forward pass
+                # Compute the loss value
+                # (the loss function is configured in `compile()`)
+                loss = obj_lib.contrastive_Loss(y_pred,adversarial_selection=True)
+        else:
+            with tf.GradientTape() as tape:
+                y_pred = self(x_2N, training=True)  # Forward pass
+                # Compute the loss value
+                # (the loss function is configured in `compile()`)
+                loss = obj_lib.contrastive_Loss(y_pred)
 
         # Compute gradients
         trainable_vars = self.trainable_variables
