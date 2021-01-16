@@ -18,3 +18,5 @@ def sim_matrix_with_temperature(x,y,temperature):
                    )
   return prod / temperature
 
+def cast_to_float32(data):
+  return tf.cast(data,tf.float32)

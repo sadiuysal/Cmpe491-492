@@ -29,6 +29,7 @@ from tensorflow import keras
 tf.config.run_functions_eagerly(True)
 
 x_train, x_test = model_class.x_train , model_class.x_test
+#print(x_train[0])
 batch_size=64
 
 
@@ -41,11 +42,11 @@ data_augmentation = model_class.data_augmentation
 preprocess_layer = model_class.preprocess
 
 
-#inputs=keras.Input(shape=(32, 32, 3))
+inputs=keras.Input(shape=(32, 32, 3))
 base_model = applications.resnet50.ResNet50(weights= None, include_top=False, input_shape= (IMG_SIZE,IMG_SIZE,3))
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
-#model = model_class.CustomModel(inputs,model_class.model_layers(inputs))
-model = model_class.CustomModel(base_model.input,base_model.output)
+model = model_class.CustomModel(inputs,model_class.model_layers(inputs))
+#model = model_class.CustomModel(base_model.input,base_model.output)
 
 def display_aug_images():
   image=x_train[0]
@@ -64,7 +65,7 @@ def train():
   model.compile(optimizer='adam') # ['accuracy'])
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
   x_train_processed=preprocess_layer(x_train)
-  model.fit(x_train, epochs=2 , batch_size=batch_size)
+  model.fit(x_train, epochs=3 , batch_size=batch_size)
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)
