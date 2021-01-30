@@ -5,10 +5,7 @@ import data_util
 import tensorflow as tf
 from tensorflow import keras
 import attacks
-
-# Do the adversarial part
-# Migrate to resnet 
-
+# TODO List
 
 """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
@@ -17,15 +14,15 @@ cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 #x_train, y_train, x_test, y_test = x_train[-1000:] , y_train[-1000:], x_test[-1000:], y_test[-1000:]
-x_train, x_test = data_util.cast_to_float32 (x_train * 1./255) , data_util.cast_to_float32( x_test * 1.255 )
-
+x_train, x_test = data_util.cast_to_float32 (x_train) , data_util.cast_to_float32( x_test )
+#look here
 
 
 #TODO 
 batch_size=64
 IMG_SIZE=32
 adversarial_attack=True
-epsilon=0.01
+epsilon=8  # 0-255>>8
 _lambda=1
 
 #resize_and_scale with layers
@@ -49,8 +46,6 @@ preprocess = tf.keras.Sequential([
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 
 model_layers = tf.keras.Sequential([
-  #preprocess,
-  #resize_and_rescale,
   tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
@@ -61,6 +56,7 @@ model_layers = tf.keras.Sequential([
 ])
 
 loss_tracker = keras.metrics.Mean(name="loss")
+
 class CustomModel(keras.Model):
     def train_step(self, data):
         # Unpack the data. Its structure depends on your model and
@@ -68,7 +64,7 @@ class CustomModel(keras.Model):
         x = data
         x_2N = tf.concat([data_augmentation(x), data_augmentation(x)], 0)
         if adversarial_attack:
-            adversaries, adv_loss = attacks.get_adversaries(self, x=x, target=data_augmentation(x), epsilon=epsilon ,itr_count=3)
+            adversaries, adv_loss = attacks.get_adversaries_2(self, x=x, target=data_augmentation(x), epsilon=epsilon ,itr_count=5,step_size=0.01)
             x_3N = tf.concat([x_2N, adversaries], 0)
             #print(adv_loss)
             with tf.GradientTape() as tape:
@@ -101,3 +97,7 @@ class CustomModel(keras.Model):
         # If you don't implement this property, you have to call
         # `reset_states()` yourself at the time of your choosing.
         return [loss_tracker]
+
+class CustomSaver(keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        self.model.save("modelAtEpoch_"+str(epoch+1))
