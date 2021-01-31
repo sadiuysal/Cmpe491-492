@@ -16,6 +16,13 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import model as model_class
 from tensorflow import keras
+import attacks
+import numpy as np
+#from yellowbrick.text import TSNEVisualizer
+from sklearn.manifold import TSNE
+import pandas as pd
+import seaborn as sn
+
 
 #TODO correction for PGD (DONE, step_size,epsilon check added, 0-255 , loss values checked)
 #TODO loss check via writing matricies ()
@@ -25,6 +32,7 @@ from tensorflow import keras
 tf.config.run_functions_eagerly(True)
 
 x_train, x_test = model_class.x_train , model_class.x_test
+y_train, y_test = model_class.y_train, model_class.y_test
 
 
 #resize_and_scale with layers
@@ -63,7 +71,7 @@ def train():
   """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
   # create and use callback:
   saver = model_class.CustomSaver()
-  model.fit(x_train, epochs=5, batch_size=model_class.batch_size, callbacks=[saver])
+  model.fit(x_train, epochs=model_class.nof_epochs, batch_size=model_class.batch_size, callbacks=[saver])
   """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
 
   #model.evaluate(x_test,  y_test, verbose=2)
@@ -80,10 +88,57 @@ def train():
 
   probability_model(x_test[:5])
   """
+def load_predict_save(augmented_imgs):
+  np.save("augmented_imgs", augmented_imgs)
+  for i in range(5):
+    model_loaded = loadModel(epoch=i + 1)
+    adversary_imgs, adv_loss = attacks.get_adversaries_2(model_loaded, x=augmented_imgs,
+                                                         target=data_augmentation(x_train), epsilon=model_class.epsilon,
+                                                         itr_count=5, step_size=0.01)
+    results = model_loaded(augmented_imgs, training=False)
+    results_adversaries = model_loaded(adversary_imgs, training=False)
+    np.save("results_adversaries_epoch_" + str(i + 1), results_adversaries)
+    np.save("results_epoch_" + str(i + 1), results)
+    print("Epoch " + str(i + 1) + " model results is COMPLETED")
+
+def loadEmbeddings(epoch):
+  results_adversaries=np.load("results_adversaries_epoch_" + str(epoch)+".npy")
+  results= np.load("results_epoch_" + str(epoch)+".npy")
+  return results,results_adversaries
+
+def visualize(results,results_adversaries,plot_title):
+  results_all = np.concatenate((results, results_adversaries), axis=0)
+  labels_all = np.concatenate((y_train, y_train), axis=0)
+  print("Results shape: " + str(np.shape(results)))
+  print("Results_all shape: " + str(np.shape(results_all)))
+  print("labels_all shape: " + str(np.shape(labels_all)))
+  tsne_model = TSNE(n_components=2, random_state=0)
+  tsne_data = tsne_model.fit_transform(results_all)
+  # creating a new data frame which help us in ploting the result data
+  tsne_data = np.vstack((tsne_data.T, labels_all.T)).T
+  tsne_df = pd.DataFrame(data=tsne_data, columns=("Dim_1", "Dim_2", "label"))
+  # Ploting the result of tsne
+  sn.FacetGrid(tsne_df, hue="label", size=6).map(plt.scatter, "Dim_1", "Dim_2").add_legend()
+  # displaying the title
+  plt.title(label="Epoch "+str(plot_title),
+            fontsize=40,
+            color="green")
+  plt.show()
+
+#train()
+x_train,y_train = x_train[-50:] , y_train[-50:]
+augmented_imgs=data_augmentation(x_train)
+load_predict_save(augmented_imgs)
+results,results_adversaries=loadEmbeddings(epoch=1)
+visualize(results,results_adversaries,1)
+results,results_adversaries=loadEmbeddings(epoch=2)
+visualize(results,results_adversaries,2)
+results,results_adversaries=loadEmbeddings(epoch=3)
+visualize(results,results_adversaries,3)
 
 
-train()
-model_1=loadModel(epoch=1)
+
+
 
 
 

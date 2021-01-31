@@ -24,6 +24,7 @@ IMG_SIZE=32
 adversarial_attack=True
 epsilon=8  # 0-255>>8
 _lambda=1
+nof_epochs=5
 
 #resize_and_scale with layers
 resize_and_rescale = tf.keras.Sequential([
