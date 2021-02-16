@@ -3,7 +3,6 @@ import tensorflow as tf
 import objective as obj_lib
 import data_util
 import numpy as np
-#TODO add uniform noise (-e,+e)
 def get_adversaries( model, x ,target,epsilon,itr_count):
   #print(tf.shape(x))
   #print(tf.shape(target))
@@ -33,6 +32,7 @@ def get_adversaries( model, x ,target,epsilon,itr_count):
 def get_adversaries_2( model, x ,target,epsilon,itr_count,step_size):  # not completed
   perturbation = np.random.uniform(-epsilon,epsilon,tf.shape(x))
   adv = x + perturbation
+  adv = data_util.cast_to_float32(tf.clip_by_value(adv, 0, 255))
   for itr in range(itr_count):
     with tf.GradientTape() as tape:
       tape.watch(adv)
@@ -49,7 +49,7 @@ def get_adversaries_2( model, x ,target,epsilon,itr_count,step_size):  # not com
     perturbation += (step_size * signed_grad)
     perturbation = data_util.cast_to_float32(tf.clip_by_value(perturbation, -epsilon, epsilon))
     adv = x + perturbation
-    adversaries = data_util.cast_to_float32(tf.clip_by_value(adv, 0, 255)) #TODO change to 0-255
+    adversaries = data_util.cast_to_float32(tf.clip_by_value(adv, 0, 255))
 
 
   inputs = tf.concat([adv, x], 0)

@@ -14,17 +14,19 @@ cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 #x_train, y_train, x_test, y_test = x_train[-1000:] , y_train[-1000:], x_test[-1000:], y_test[-1000:]
-x_train, x_test = data_util.cast_to_float32 (x_train) , data_util.cast_to_float32( x_test )
+x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
 #look here
 
 
 #TODO 
-batch_size=64
+batch_size=256
 IMG_SIZE=32
 adversarial_attack=True
 epsilon=8  # 0-255>>8
-_lambda=1
-nof_epochs=5
+_lambda=256
+nof_epochs=30
+attacks_itr_count=7
+attacks_step_size=1
 
 #resize_and_scale with layers
 resize_and_rescale = tf.keras.Sequential([
@@ -34,14 +36,9 @@ resize_and_rescale = tf.keras.Sequential([
 #data augmentation layers
 data_augmentation = tf.keras.Sequential([
   layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-  layers.experimental.preprocessing.RandomRotation(0.2),
-])
-#resize-scale+augmentation
-preprocess = tf.keras.Sequential([
-  layers.experimental.preprocessing.Resizing(IMG_SIZE, IMG_SIZE),
-  layers.experimental.preprocessing.Rescaling(1./255),
-  layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
   layers.experimental.preprocessing.RandomRotation(0.3),
+  layers.experimental.preprocessing.RandomZoom(0.1),
+
 ])
 
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
@@ -50,7 +47,8 @@ model_layers = tf.keras.Sequential([
   tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 3)),
   tf.keras.layers.MaxPooling2D((2, 2)),
   tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
-  tf.keras.layers.Flatten()
+  tf.keras.layers.MaxPooling2D((2, 2)),
+  tf.keras.layers.Flatten(),
   #tf.keras.layers.Dense(64, activation='relu'),
   #tf.keras.layers.Dropout(0.2),
   #tf.keras.layers.Dense(10)
@@ -65,14 +63,14 @@ class CustomModel(keras.Model):
         x = data
         x_2N = tf.concat([data_augmentation(x), data_augmentation(x)], 0)
         if adversarial_attack:
-            adversaries, adv_loss = attacks.get_adversaries_2(self, x=x, target=data_augmentation(x), epsilon=epsilon ,itr_count=5,step_size=0.01)
+            adversaries, adv_loss = attacks.get_adversaries_2(self, x=x, target=data_augmentation(x), epsilon=epsilon ,itr_count=attacks_itr_count,step_size=1)
             x_3N = tf.concat([x_2N, adversaries], 0)
             #print(adv_loss)
             with tf.GradientTape() as tape:
                 y_pred = self(x_3N, training=True)  # Forward pass
                 # Compute the loss value
                 # (the loss function is configured in `compile()`)
-                loss = obj_lib.contrastive_Loss(y_pred,adversarial_selection=True)
+                loss = obj_lib.contrastive_Loss(y_pred,adversarial_selection=True,_lambda=_lambda)
         else:
             with tf.GradientTape() as tape:
                 y_pred = self(x_2N, training=True)  # Forward pass

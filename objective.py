@@ -20,9 +20,10 @@ import tensorflow as tf
 
 
 # outputs is 2N*d
-def contrastive_Loss( output , adversarial_selection =False , temperature= 1):
+#TODO temperature parameter
+def contrastive_Loss( output , adversarial_selection =False , temperature= 0.5 , _lambda = 256):
   if adversarial_selection:
-    N = int(tf.shape(output)[0] / 3)
+    N = int( tf.shape(output)[0]/3 )
     # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.
     outputs = tf.reshape(output, [tf.shape(output)[0], tf.shape(output)[-1]], name=None)
     # print("N : " + str(N))
@@ -33,9 +34,13 @@ def contrastive_Loss( output , adversarial_selection =False , temperature= 1):
     #print(str(tf.shape(z_x)) + "  &&&&&&&&&&&&  " + str(tf.shape(z_prime_x)) + "  &&&&&&&&&&&&  " + str(tf.shape(z_adversaries) ))
     sim_matrix_1 = data_util.sim_matrix_with_temperature(z_x, z_prime_x, temperature)
     sim_matrix_2 = data_util.sim_matrix_with_temperature(z_x, z_adversaries, temperature)
+    sim_matrix_3 = data_util.sim_matrix_with_temperature(z_adversaries,z_x , temperature)
+    sim_matrix_4 = data_util.sim_matrix_with_temperature(z_adversaries, z_prime_x, temperature)
     loss = data_util.find_loss_from_sim_matrix(sim_matrix_1) + data_util.find_loss_from_sim_matrix(sim_matrix_2)
+    loss_adv = data_util.find_loss_from_sim_matrix(sim_matrix_3) + data_util.find_loss_from_sim_matrix(sim_matrix_4)
+    loss += (1/_lambda)*loss_adv
   else:
-    N=int(tf.shape(output)[0]/2)
+    N=int( tf.shape(output)[0]/2 )
     # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.
     outputs=tf.reshape(output, [ tf.shape(output)[0] ,tf.shape(output)[-1] ], name=None)
     #print("N : " + str(N))
