@@ -1,10 +1,13 @@
-# Cmpe491-sadiuysal
-CMPE 491 Project Repository
+# Cmpe492-sadiuysal
+CMPE 492 Project Development Branch
 
 ## Updates
 Please see wiki pages for weekly updates.
 
-To see implementation state of "Contrastive Learning with Adversarial Examples" paper, please checkout to CLAE branch. 
+## Environmental setup and running:
+Run below commands in order for training the model and saving trained models to outputs folder
 
-To see the current state of "Adversarial Self-Supervised Contrastive Learning" paper code, please checkout to roCL branch. 
-
+* $ python -m venv env_ROCL
+* $ source env_ROCL/bin/activate
+* $ pip install -r requirements.txt
+* $ python run.py
