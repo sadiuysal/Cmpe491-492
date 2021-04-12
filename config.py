@@ -6,3 +6,6 @@ _lambda = 256
 nof_epochs = 5
 attacks_itr_count = 7
 attacks_step_size = 1.8
+GLOBAL_BATCH_SIZE = 128*4
+BATCH_SIZE_PER_REPLICA = 128
+##

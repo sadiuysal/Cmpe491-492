@@ -23,36 +23,45 @@ import pandas as pd
 import seaborn as sn
 import config as cfg
 import data_util
+import os
 
+import objective
 #import tensorflow_addons as tfa
 
-
-"""Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
-
-#mnist = tf.keras.datasets.mnist
-cifar10 = tf.keras.datasets.cifar10
-
-(x_train, y_train), (x_test, y_test) = cifar10.load_data()
-x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-
 tf.config.run_functions_eagerly(True)
-
-# data augmentation layers
-data_augmentation = model_class.data_augmentation
-
-inputs = keras.Input(shape=(32, 32, 3))
-base_model = applications.resnet50.ResNet50(weights=None, include_top=False,
-                                            input_shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3))
-"""Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
-#model = model_class.CustomModel(inputs, model_class.model_layers(inputs))
-model = model_class.CustomModel(base_model.input,base_model.output)
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
+#TODO LOOK
 
 
 def loadModel(epoch):
     return keras.models.load_model("outputs/modelAtEpoch_" + str(epoch))
 
+def build_compile_model():
+    """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
-def train(training_data):
+    # mnist = tf.keras.datasets.mnist
+    cifar10 = tf.keras.datasets.cifar10
+
+    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    x_train, x_test = data_util.cast_to_float32(x_train), data_util.cast_to_float32(x_test)
+    inputs = keras.Input(shape=(32, 32, 3))
+    base_model = applications.resnet50.ResNet50(weights=None, include_top=False,
+                                                input_shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3))
+    """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
+
+    model_layers = tf.keras.Sequential([
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3)),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Flatten(),
+        # tf.keras.layers.Dense(64, activation='relu'),
+        # tf.keras.layers.Dropout(0.2),
+        # tf.keras.layers.Dense(10)
+    ])
+    """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
+    model = model_class.CustomModel(inputs, model_layers(inputs))
+    # model = model_class.CustomModel(base_model.input,base_model.output)
     lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
         initial_learning_rate=0.1,
         decay_steps=100000,
@@ -60,14 +69,40 @@ def train(training_data):
         staircase=True)
     opt = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
     #opt=tfa.optimizers.LAMB(learning_rate=lr_schedule,epsilon=,weight_decay_rate=1e-6)
-    model.compile(optimizer=opt)  # ['accuracy'])
+    model.compile(optimizer=opt,loss=objective.contrastive_Loss)  # ['accuracy'])
     """ The `Model.fit` method adjusts the model parameters to minimize the loss: """
-    # create and use callback:
-    saver = model_class.CustomSaver()
-    model.fit(training_data, epochs=cfg.nof_epochs, batch_size=cfg.batch_size, callbacks=[saver])
-    """The `Model.evaluate` method checks the models performance, usually on a "[Validation-set](https://developers.google.com/machine-learning/glossary#validation-set)" or "[Test-set](https://developers.google.com/machine-learning/glossary#test-set)"."""
+    return model , (x_train, y_train), (x_test, y_test)
 
-    # model.evaluate(x_test,  y_test, verbose=2)
+
+@tf.function
+def train_epoch(dataset,model,strategy):
+    #tf.print("Epoch Dataset shape : ", tf.shape(dataset))
+    #for input in dataset:
+    #tf.print("Input shape : ", tf.shape(input))
+    l = strategy.experimental_run(model.replica_step, dataset.make_one_shot_iterator())
+    loss = strategy.reduce(tf.distribute.ReduceOp.MEAN, l, axis=0)
+    tf.print("Training loss: ", loss)
+
+def execute():
+    strategy=tf.distribute.MirroredStrategy()
+    print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+    with strategy.scope():
+        model, (x_train, y_train), (x_test, y_test) = build_compile_model()
+        # x_train, y_train = x_train[-(2*cfg.batch_size):], y_train[-(2*cfg.batch_size):] # IF NEEDED GET SLICE OF THE DATASET
+        # create the dataset and distrubute
+        train_dataset = tf.data.Dataset.from_tensor_slices(x_train).shuffle(buffer_size=1024).batch(
+            cfg.GLOBAL_BATCH_SIZE)
+        dataset = strategy.experimental_distribute_dataset(train_dataset)
+
+        # create and use callback:
+        #saver = model_class.CustomSaver()
+        #model.fit(training_data, epochs=cfg.nof_epochs, batch_size=cfg.batch_size, callbacks=[saver],steps_per_epoch=2)
+        for epoch in range(cfg.nof_epochs):
+            print("Starting epoch : ",epoch + 1 )
+            train_epoch(dataset,model,strategy)
+            #Checkpoint (do whatever you want, ex: eval or save the model )
+
+
 
 
 def load_predict_save(original_imgs,n_of_epoch):
@@ -76,13 +111,12 @@ def load_predict_save(original_imgs,n_of_epoch):
     #print(tf.shape(original_imgs))
     #print(tf.shape(original_imgs_concat))
     #original_imgs_concat=np.concatenate((original_imgs,original_imgs,original_imgs,original_imgs,original_imgs),axis=0)
-    augmented_imgs = data_augmentation(original_imgs_concat)
+    augmented_imgs = model_class.data_augmentation(original_imgs_concat)
     np.save("outputs/augmented_imgs", augmented_imgs)
-    euclidean_distances=[[] for i in range(5)]
     for i in range(n_of_epoch):
         model_loaded = loadModel(epoch=i + 1)
         adversary_imgs, adv_loss = attacks.get_adversaries_2(model_loaded, x=augmented_imgs,
-                                                             target=data_augmentation(original_imgs_concat),
+                                                             target=model_class.data_augmentation(original_imgs_concat),
                                                              epsilon=cfg.epsilon,
                                                              itr_count=cfg.attacks_itr_count,
                                                              step_size=cfg.attacks_step_size)
@@ -96,33 +130,14 @@ def load_predict_save(original_imgs,n_of_epoch):
         np.save("outputs/results_original_epoch_" + str(i + 1), results_original_imgs)
         # results_all = np.concatenate((results, results_adversaries), axis=0)
         print("Epoch " + str(i + 1) + " model results is COMPLETED.")
-        #dst = [distance.euclidean(x, y) for x, y in zip(results, results_adversaries)]
-        #l1_norm = tf.norm(tf.math.subtract(results, results_adversaries), ord=1, axis=1)
-        #l2_norm = tf.norm(tf.math.subtract(results, results_adversaries), ord=2, axis=1)
-        #l_inf_norm = tf.norm(tf.math.subtract(results, results_adversaries), ord=np.inf, axis=1)
-        #euclidean_distances[i] = l_inf_norm
 
-        """
-        print("L1 " + " : " + " L2 " + " : " + " L_inf" + " euclidean")
-        for x, y, z  in zip(l1_norm[-50:], l2_norm[-50:], l_inf_norm[-50:] ):
-            print(str(x) + "   :   " + str(y) + "  :  " + str(z))"""
-"""
-    print("Euclidean distances: ")
-    print("change1to2 " + " : " + " change2to3 " + " : " + " change3to4" + " : " +"change4to5")
-    for i in range(len(euclidean_distances[0])):
-        debug_str=""
-        for j in range(4):
-            debug_str += str(euclidean_distances[j+1][i]-euclidean_distances[j][i]) + "  :  "
-        print(debug_str)
-        
-"""
 def loadEmbeddings(epoch):
     results_adversaries = np.load("outputs/results_adversaries_epoch_" + str(epoch) + ".npy")
     results_aug = np.load("outputs/results_epoch_" + str(epoch) + ".npy")
     results_original_imgs = np.load("outputs/results_original_epoch_" + str(epoch) + ".npy")
     return results_original_imgs,results_aug, results_adversaries
 
-
+"""
 def visualize(results_orig,results_aug,results_adv, plot_title=""):
     lbl_size=tf.shape(y_test)
     labels_orig = np.full(shape=lbl_size, fill_value="original")
@@ -174,8 +189,12 @@ def get_selected_label_data(labels, max_row_count_per_label):
                 res_labels = np.concatenate((res_labels, np.expand_dims(y_train[ind], axis=0)), axis=0)
     return res, res_labels
 
+"""
+#x_train, y_train = x_train[-(2*cfg.batch_size):], y_train[-(2*cfg.batch_size):]
 
-x_train, y_train = x_train[-(2*cfg.batch_size):], y_train[-(2*cfg.batch_size):]
-train(training_data=x_train)
+#test_dataset = tf.data.Dataset.from_tensor_slices(x_test).batch(GLOBAL_BATCH_SIZE)
+
+
+execute()
 
 
