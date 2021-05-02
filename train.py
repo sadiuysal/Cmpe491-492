@@ -13,7 +13,8 @@ from timeit import default_timer as timer
 
 import tensorflow as tf
 import numpy as np
-import imageio
+#import imageio
+
 
 from model import Model
 import cifar10_input
@@ -91,7 +92,7 @@ if not os.path.exists(model_dir):
 # - eval of different runs
 
 saver = tf.train.Saver(max_to_keep=200)
-tf.summary.scalar('accuracy adv train', accuracy_adv)
+#tf.summary.scalar('accuracy adv train', accuracy_adv)
 tf.summary.scalar('xent adv train', xent / batch_size)
 #tf.summary.image('images adv train', x_adv)
 merged_summaries = tf.summary.merge_all()
