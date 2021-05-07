@@ -11,7 +11,7 @@ import shutil
 from timeit import default_timer as timer
 
 
-import tensorflow as tf
+#import tensorflow as tf
 import numpy as np
 #import imageio
 
@@ -66,11 +66,11 @@ learning_rate = tf.train.piecewise_constant(
 mean_xent, xent, weight_decay_loss, accuracy_nat, _ = model.loss_func()
 total_loss = mean_xent + weight_decay * weight_decay_loss 
 
-
 train_step = tf.train.MomentumOptimizer(learning_rate, momentum).minimize(total_loss, global_step=global_step)
 
 
 
+# TODO set up adversary with GAN 
 # Set up adversary
 attack = LinfPGDAttack(model,
                        config['epsilon'],
@@ -103,7 +103,7 @@ shutil.copy('config.json', model_dir)
 
 
 with tf.Session() as sess:
-
+ #TODO Already Augmented or Clean examples ? ASK 
   cifar = cifar10_input.AugmentedCIFAR10Data(raw_cifar, sess, model)
 
   # Initialize the summary writer, global variables, and our time counter.
@@ -123,7 +123,10 @@ with tf.Session() as sess:
     #x_batch = preprocess(x_batch)
     
     #x_batch_adv = attack.perturb(x_batch, y_batch, sess)
-    
+    ##added 
+    #generator = model.generator(x, f_dim, output_size, c_dim, is_training=True)
+    # f_dim = nof filters to use for generator
+
     train_dict = {model.x_input: x_batch, model.y_input: y_batch} 
      
     # Output to stdout

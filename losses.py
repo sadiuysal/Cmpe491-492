@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+## Uses embedded vectors in the process : What should I use instead?
 
 def contrastive_Loss( output , temperature= 0.5 , _lambda = 256):
   N = int( tf.shape(output)[0]/3 )
