@@ -40,9 +40,14 @@ tf.config.run_functions_eagerly(True)
 # data augmentation layers
 data_augmentation = model_class.data_augmentation
 
-inputs = keras.Input(shape=(32, 32, 3))
+inputs = keras.Input(shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3))
+"""
 base_model = applications.resnet50.ResNet50(weights=None, include_top=False,
-                                            input_shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3))
+                                            input_shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3))"""
+base_model = tf.keras.applications.ResNet50(
+    include_top=False, weights='imagenet', input_tensor=inputs,
+    input_shape=(cfg.IMG_SIZE, cfg.IMG_SIZE, 3), pooling=None
+)
 """Build the `tf.keras.Sequential` model by stacking layers. Choose an optimizer and loss function for training:"""
 #model = model_class.CustomModel(inputs, model_class.model_layers(inputs))
 model = model_class.CustomModel(base_model.input,base_model.output)
