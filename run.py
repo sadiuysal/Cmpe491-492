@@ -98,7 +98,6 @@ def train(generator,discriminator,data,test_data):
         logits=d_out_real, labels=tf.one_hot(label, class_num)))
     d_loss_noise = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
         logits=d_out_noise, labels=tf.one_hot(label, class_num)))"""
-
     output = discriminator(x_all)
     """print("x_real: ",x_real.shape)
     print("x_all: ",x_all.shape)
@@ -126,7 +125,96 @@ def train(generator,discriminator,data,test_data):
     #g_grads=tape.gradient(g_loss, g_vars)
     g_grads = tf.gradients(g_loss + g_decay, g_vars, stop_gradients=g_vars)
     g_train_op = g_optimizer.apply_gradients(zip(g_grads,g_vars))
+    with tf.control_dependencies([g_train_op]):
+        x_noise2 = generator(x_real)
+        x_perturbed2 = x_real + epsilon*x_noise2
+        x_all2 = tf.concat([x_clean, x_real, x_perturbed2], 0)
+        output2 = discriminator(x_all2)
+        g_loss2 = loss.contrastive_Loss(output2)
 
+        g_grads2 = tf.gradients(g_loss2 + g_decay, g_vars, stop_gradients=g_vars)
+        g_train_op2 = g_optimizer.apply_gradients(zip(g_grads2, g_vars))
+
+        with tf.control_dependencies([g_train_op2]):
+            x_noise3 = generator(x_real)
+            x_perturbed3 = x_real + epsilon*x_noise3
+            x_all3 = tf.concat([x_clean, x_real, x_perturbed3], 0)
+            output3 = discriminator(x_all3)
+            g_loss3 = loss.contrastive_Loss(output3)
+
+            g_grads3 = tf.gradients(g_loss3 + g_decay, g_vars, stop_gradients=g_vars)
+            g_train_op3 = g_optimizer.apply_gradients(zip(g_grads3, g_vars))
+
+
+            """with tf.control_dependencies([g_train_op3]):
+                x_noise4 = generator(x_real)
+                x_perturbed4 = x_real + epsilon*x_noise4
+                x_all4 = tf.concat([x_clean, x_real, x_perturbed4], 0)
+                output4 = discriminator(x_all4)
+                g_loss4 = loss.contrastive_Loss(output4)
+
+
+                g_grads4 = tf.gradients(g_loss4 + g_decay, g_vars, stop_gradients=g_vars)
+                g_train_op4 = g_optimizer.apply_gradients(zip(g_grads4, g_vars))
+
+
+                with tf.control_dependencies([g_train_op4]):
+                    x_noise5 = generator(x_real)
+                    x_perturbed5 = x_real + epsilon*x_noise5
+                    x_all5 = tf.concat([x_clean, x_real, x_perturbed5], 0)
+                    output5 = discriminator(x_all5)
+                    g_loss5 = loss.contrastive_Loss(output5)
+
+                    g_grads5 = tf.gradients(g_loss5 + g_decay, g_vars, stop_gradients=g_vars)
+                    g_train_op5 = g_optimizer.apply_gradients(zip(g_grads5, g_vars))
+
+
+                    with tf.control_dependencies([g_train_op5]):
+                        x_noise6 = generator(x_real)
+                        x_perturbed6 = x_real + epsilon*x_noise6
+                        x_all6 = tf.concat([x_clean, x_real, x_perturbed6], 0)
+                        output6 = discriminator(x_all6)
+                        g_loss6 = loss.contrastive_Loss(output6)"""
+            g_grads3 = tf.gradients(g_loss3 + g_decay, g_vars, stop_gradients=g_vars)
+            g_train_op3 = g_optimizer.apply_gradients(zip(g_grads3, g_vars))
+            #g_grads6 = tf.gradients(g_loss6 + g_decay, g_vars, stop_gradients=g_vars)
+
+
+    # D step: use finite approx for gradient regularization
+
+    # evaluate Hessian vector approx (Eq. 9 in paper)
+    # g_virtual_optimizer computes \phi_k + hv
+    g_step_size = learning_rate/10
+    g_virtual_optimizer = tf.train.GradientDescentOptimizer(learning_rate=g_step_size)
+
+    #with tf.control_dependencies([d_grads_noise6[0], d_grads_real[0]]):
+    g_virtual_step = g_virtual_optimizer.apply_gradients(zip(g_grads3, g_vars))
+
+    # make sure g is updated before re-computing
+    with tf.control_dependencies([g_virtual_step]):
+        x_noiseB = generator(x_real)
+
+    x_perturbedB = tf.stop_gradient(x_real + epsilon*x_noiseB)
+    x_allB = tf.concat([x_clean, x_real, x_perturbedB], 0)
+    outputB = discriminator(x_allB)
+    g_lossB = loss.contrastive_Loss(outputB)
+    #print("Generator loss after iteration: " ,g_lossB)
+
+
+
+
+    # apply D updates
+
+    # restore parameters for G
+    #minus_g_grads = [-g for g in g_grads6]
+
+    #d_train_and_restore_op = g_virtual_optimizer.apply_gradients(zip(minus_g_grads, g_vars)
+
+    # Gradient norm to evaluate convergence
+    g_reg = 0.5 * sum(
+        tf.reduce_sum(tf.square(g)) for g in g_grads3
+    )
+    # Build test
     acc_g, acc_update_g, acc_init_g = build_test_G(discriminator, generator, test_data)
     #acc_g, acc_init_g = build_test_G(discriminator, generator, test_data)
     # Global step
@@ -151,16 +239,18 @@ def train(generator,discriminator,data,test_data):
             if sv.should_stop():
                 break
 
-            g_loss_out = sess.run(
-                [g_loss])
+            g_loss_out,g_loss_outB = sess.run(
+                [g_loss,g_lossB])
 
+            print("Batch: "+str(batch_idx)+" Generator loss : " + str(g_loss_out))
+            print("Batch: " + str(batch_idx) + " Generator loss after iteration : " + str(g_loss_outB))
             if batch_idx % print_iter == 0:
                 #test_acc = run_test(acc, acc_update, acc_init, sess, config)
                 #test_acc_fgs = run_test(acc_fgs, acc_update_fgs, acc_init_fgs, sess, config)
                 #test_acc_pgd = run_test(acc_pgd, acc_update_pgd, acc_init_pgd, sess, config)
                 test_acc_g = run_test(acc_g, acc_update_g, acc_init_g, sess)
 
-                print('i=%d, Loss_g: %4.4f, acc_g: %.4f' % (batch_idx, g_loss_out[0], test_acc_g),
+                print('i=%d, Loss_g: %4.4f, acc_g: %.4f' % (batch_idx, g_loss_out , test_acc_g),
                       flush=True)
 
             if batch_idx % save_iter == 0:
