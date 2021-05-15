@@ -15,11 +15,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 #import model as model_class
 from tensorflow import keras
-import attacks
-import numpy as np
-from sklearn.manifold import TSNE
-import pandas as pd
-import seaborn as sn
+import objective as loss
 import config as cfg
 import data_util
 import models
@@ -33,7 +29,9 @@ cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-(x_train, y_train), (x_test, y_test) = (x_train[:1000,:], y_train[:1000,:]), (x_test[:100,:], y_test[:100,:])
+(x_train, y_train), (x_test, y_test) = (x_train[:1000,:]/256, y_train[:1000,:]/256), (x_test[:100,:]/256, y_test[:100,:]/256)
+"""with tf.Session() as sess:
+    print(x_train[0,:].eval())"""
 
 #tf.config.run_functions_eagerly(True)
 #tf.compat.v1.disable_eager_execution()
@@ -62,6 +60,7 @@ generator = models.get_generator(c_dim=cfg.c_dim, f_dim=cfg.gf_dim)
 #model = model_class.CustomModel(inputs,discriminator(generator))
 
 
+
 def train(generator,discriminator,data,test_data):
     tf.set_random_seed(cfg.random_seed)
 
@@ -77,29 +76,37 @@ def train(generator,discriminator,data,test_data):
     save_iter = cfg.save_iter
 
 
-    x_real = data[0]
+    x_clean = data[0]
     label = data[1]
 
     # Data augmentation for CIFAR10
-    x_real = tf.map_fn(lambda x: tf.image.resize_image_with_crop_or_pad(x, 32+4, 32+4), x_real)
+    x_real = tf.map_fn(lambda x: tf.image.resize_image_with_crop_or_pad(x, 32+4, 32+4), x_clean)
     x_real = tf.map_fn(lambda x: tf.random_crop(x, [32,32,3]), x_real)
     x_real = tf.map_fn(lambda x: tf.image.random_flip_left_right(x), x_real)
 
     # Normalize to range [-1,1]
     x_real = 2.*x_real - 1.
-
     x_noise = generator(x_real)
     x_perturbed = x_real + epsilon * x_noise
-    d_out_real = layer_to_logits(discriminator(x_real))
+    x_all=tf.concat([x_clean,x_real, x_perturbed], 0)
+
+
+
+    """d_out_real = layer_to_logits(discriminator(x_real))
     d_out_noise = layer_to_logits(discriminator(x_perturbed))
     d_loss_real = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
         logits=d_out_real, labels=tf.one_hot(label, class_num)))
     d_loss_noise = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
-        logits=d_out_noise, labels=tf.one_hot(label, class_num)))
+        logits=d_out_noise, labels=tf.one_hot(label, class_num)))"""
 
+    output = discriminator(x_all)
+    """print("x_real: ",x_real.shape)
+    print("x_all: ",x_all.shape)
+    print("x_all_out: ",output.shape)"""
     # Losses for the discriminator network and generator network
     # d_loss = d_loss_real + d_loss_noise
-    g_loss = -d_loss_noise
+    #g_loss = -d_loss_noise
+    g_loss = loss.contrastive_Loss(output)
 
     # Weight decay: assume weights are named 'kernel' or 'weights'
     g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='generator')
@@ -190,7 +197,7 @@ def build_test_G(discriminator, generator, test_data):
 
 # run actual test to collect performance statistics
 def run_test(tf_metric, tf_metric_update, running_vars_initializer, sess):
-    print("run_test1")
+    #print("run_test1")
     sess.run(running_vars_initializer)
 
     batch_size = cfg.batch_size

@@ -21,9 +21,9 @@ import tensorflow as tf
 
 # outputs is 2N*d
 #TODO temperature parameter
-def contrastive_Loss( output , adversarial_selection =False , temperature= 0.5 , _lambda = 256):
+def contrastive_Loss( output , adversarial_selection = True , temperature= 0.5 , _lambda = 256):
   if adversarial_selection:
-    N = int( tf.shape(output)[0]/3 )
+    N = int( output.shape[0]//3 )
     # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.
     outputs = tf.reshape(output, [tf.shape(output)[0], tf.shape(output)[-1]], name=None)
     # print("N : " + str(N))
