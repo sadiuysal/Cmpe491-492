@@ -3,7 +3,7 @@ import config as cfg
 
 def get_generator(scope='generator', **kwargs):
     model_func = generator
-    return tf.compat.v1.make_template(scope, model_func, **kwargs)
+    return tf.make_template(scope, model_func, **kwargs)
 
 
 def generator(x, f_dim, c_dim, is_training=True):
@@ -35,16 +35,16 @@ def generator(x, f_dim, c_dim, is_training=True):
 
     for i in range(n_downsampling):
         mult = 2 ** (n_downsampling - i)
-        inputs = tf.compat.v1.layers.conv2d_transpose(inputs, filters=int(ngf * mult / 2), kernel_size=3, strides=(2, 2),
+        inputs = tf.layers.conv2d_transpose(inputs, filters=int(ngf * mult / 2), kernel_size=3, strides=(2, 2),
                                             padding='same',
-                                            kernel_initializer=tf.compat.v1.truncated_normal_initializer(0.0, 0.02),
+                                            kernel_initializer=tf.truncated_normal_initializer(0.0, 0.02),
                                             data_format=data_format, use_bias=False)
         inputs = batch_norm(inputs, is_training, data_format)
         inputs = tf.nn.relu(inputs)
 
-    inputs = tf.compat.v1.layers.conv2d(inputs, filters=c_dim, kernel_size=3, strides=1,
+    inputs = tf.layers.conv2d(inputs, filters=c_dim, kernel_size=3, strides=1,
                               padding='same', use_bias=True,
-                              kernel_initializer=tf.compat.v1.truncated_normal_initializer(0.0, 0.02), data_format=data_format)
+                              kernel_initializer=tf.truncated_normal_initializer(0.0, 0.02), data_format=data_format)
     inputs = tf.nn.tanh(inputs)
 
     if data_format == 'channels_first':
@@ -59,10 +59,10 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format):
     # dimensions of `inputs` (as opposed to using `tf.layers.conv2d` alone).
     if strides > 1:
         inputs = fixed_padding(inputs, kernel_size, data_format)
-    return tf.compat.v1.layers.conv2d(
+    return tf.layers.conv2d(
         inputs=inputs, filters=filters, kernel_size=kernel_size, strides=strides,
         padding=('SAME' if strides == 1 else 'VALID'), use_bias=False,
-        kernel_initializer=tf.compat.v1.variance_scaling_initializer(),
+        kernel_initializer=tf.variance_scaling_initializer(),
         data_format=data_format)
 
 
@@ -96,7 +96,7 @@ def batch_norm(inputs, training, data_format):
     """Performs a batch normalization using a standard set of parameters."""
     # We set fused=True for a significant performance boost. See
     # https://www.tensorflow.org/performance/performance_guide#common_fused_ops
-    return tf.compat.v1.layers.batch_normalization(
+    return tf.layers.batch_normalization(
         inputs=inputs, axis=1 if data_format == 'channels_first' else 3,
         momentum=cfg._BATCH_NORM_DECAY, epsilon=cfg._BATCH_NORM_EPSILON, center=True,
         scale=True, training=training, fused=True)

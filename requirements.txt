@@ -1,4 +1,4 @@
-tensorflow == 2.5.0
+tensorflow == 1.15
 tensorflow-datasets
 matplotlib
 pandas
@@ -6,4 +6,5 @@ seaborn
 tensorflow-addons[tensorflow]
 keras
 sklearn
+h5py == 2.10.0
 
