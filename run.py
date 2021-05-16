@@ -29,9 +29,28 @@ cifar10 = tf.keras.datasets.cifar10
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-(x_train, y_train), (x_test, y_test) = (x_train[:1000,:]/256, y_train[:1000,:]/256), (x_test[:100,:]/256, y_test[:100,:]/256)
+(x_train, y_train), (x_test, y_test) = (x_train[:1000,:]/255, y_train[:1000,:]), (x_test[:100,:]/255, y_test[:100,:])
 """with tf.Session() as sess:
     print(x_train[0,:].eval())"""
+
+image_batch = tf.train.shuffle_batch(
+                [x_train, y_train],
+                batch_size=cfg.batch_size,
+                num_threads=16,
+                capacity=10000 + 3 * cfg.batch_size,
+                min_after_dequeue=10000,
+                enqueue_many=True
+            )
+
+test_image_batch = tf.train.shuffle_batch(
+    [x_test, y_test],
+    batch_size=cfg.batch_size,
+    num_threads=16,
+    capacity=10000 + 3 * cfg.batch_size,
+    min_after_dequeue=10000,
+    enqueue_many=True
+)
+
 
 #tf.config.run_functions_eagerly(True)
 #tf.compat.v1.disable_eager_execution()
@@ -70,7 +89,7 @@ def train(generator,discriminator,data,test_data):
     weight_decay = cfg.weight_decay
     learning_rate = cfg.learning_rate
     gamma = cfg.gamma    # gradient regularization parameter
-    train_size = data[0].shape[0]    # training set size
+    train_size = x_train.shape[0]    # training set size
 
     print_iter = cfg.print_iter
     save_iter = cfg.save_iter
@@ -105,7 +124,7 @@ def train(generator,discriminator,data,test_data):
     # Losses for the discriminator network and generator network
     # d_loss = d_loss_real + d_loss_noise
     #g_loss = -d_loss_noise
-    g_loss = loss.contrastive_Loss(output)
+    g_loss = -loss.contrastive_Loss(output)
 
     # Weight decay: assume weights are named 'kernel' or 'weights'
     g_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='generator')
@@ -130,7 +149,7 @@ def train(generator,discriminator,data,test_data):
         x_perturbed2 = x_real + epsilon*x_noise2
         x_all2 = tf.concat([x_clean, x_real, x_perturbed2], 0)
         output2 = discriminator(x_all2)
-        g_loss2 = loss.contrastive_Loss(output2)
+        g_loss2 = -loss.contrastive_Loss(output2)
 
         g_grads2 = tf.gradients(g_loss2 + g_decay, g_vars, stop_gradients=g_vars)
         g_train_op2 = g_optimizer.apply_gradients(zip(g_grads2, g_vars))
@@ -140,7 +159,7 @@ def train(generator,discriminator,data,test_data):
             x_perturbed3 = x_real + epsilon*x_noise3
             x_all3 = tf.concat([x_clean, x_real, x_perturbed3], 0)
             output3 = discriminator(x_all3)
-            g_loss3 = loss.contrastive_Loss(output3)
+            g_loss3 = -loss.contrastive_Loss(output3)
 
             g_grads3 = tf.gradients(g_loss3 + g_decay, g_vars, stop_gradients=g_vars)
             g_train_op3 = g_optimizer.apply_gradients(zip(g_grads3, g_vars))
@@ -197,7 +216,7 @@ def train(generator,discriminator,data,test_data):
     x_perturbedB = tf.stop_gradient(x_real + epsilon*x_noiseB)
     x_allB = tf.concat([x_clean, x_real, x_perturbedB], 0)
     outputB = discriminator(x_allB)
-    g_lossB = loss.contrastive_Loss(outputB)
+    g_lossB = -loss.contrastive_Loss(outputB)
     #print("Generator loss after iteration: " ,g_lossB)
 
 
@@ -293,13 +312,9 @@ def run_test(tf_metric, tf_metric_update, running_vars_initializer, sess):
     batch_size = cfg.batch_size
     test_size = x_test.shape[0]
     num_steps = int(test_size//batch_size)+1
-    #print("nof steps: ", num_steps)
     for i in range(num_steps):
-        #print(i)
         sess.run(tf_metric_update)
-    #print("run_test3")
     accuracy = sess.run(tf_metric)
-    #print("run_test4")
     return accuracy
 
 
@@ -307,6 +322,8 @@ def run_test(tf_metric, tf_metric_update, running_vars_initializer, sess):
 #x_train, y_train = x_train[-(2*cfg.batch_size):], y_train[-(2*cfg.batch_size):]
 #train(training_data=x_train)
 
-train(generator,discriminator,(x_train,y_train),(x_test,y_test))
+
+
+train(generator,discriminator,image_batch,test_image_batch)
 
 
