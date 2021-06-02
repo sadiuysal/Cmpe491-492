@@ -1,10 +1,7 @@
-tensorflow == 1.15
-tensorflow-datasets
+tensorflow
 matplotlib
 pandas
 seaborn
-tensorflow-addons[tensorflow]
-keras
 sklearn
-h5py == 2.10.0
-
+keras
+numpy
