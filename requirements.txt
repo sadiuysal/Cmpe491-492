@@ -1,7 +1,6 @@
-tensorflow
 matplotlib
 pandas
 seaborn
 sklearn
 keras
-numpy
+tensorflow
