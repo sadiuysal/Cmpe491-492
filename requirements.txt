@@ -4,3 +4,6 @@ seaborn
 sklearn
 keras
 tensorflow
+IPython
+-q imageio
+-q git+https://github.com/tensorflow/docs
