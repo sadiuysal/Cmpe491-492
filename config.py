@@ -7,7 +7,7 @@ attacks_step_size = 1.8
 
 ##
 IMG_SIZE = 32
-BATCH_SIZE = 128 # default 64
+BATCH_SIZE = 256 # default 64
 class_num = 10
 epsilon = 0.0625  # 0-255>>8
 

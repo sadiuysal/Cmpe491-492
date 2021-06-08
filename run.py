@@ -18,16 +18,17 @@ import PIL
 import imageio as imageio
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow import keras
-import objective as loss
 import config as cfg
+from keras import metrics
 import data_util
 import models
 import os
+from models import data_augmentation
 from IPython import display
 
-tf.config.threading.set_inter_op_parallelism_threads(2)
-tf.config.threading.set_intra_op_parallelism_threads(2)
+
+
+
 
 logical_devices = tf.config.list_logical_devices('CPU')
 print("Num CPUs:", len(logical_devices))
@@ -42,7 +43,7 @@ with tf.device(logical_devices[0].name):
 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-    (x_train, y_train), (x_test, y_test) = (x_train[:12000,:], y_train[:12000,:]), (x_test[:100,:], y_test[:100,:])
+    (x_train, y_train), (x_test, y_test) = (x_train[:20000,:], y_train[:20000,:]), (x_test[:100,:], y_test[:100,:])
 
     #print(x_train.shape)
     train_images = (x_train - 127.5) / 127.5  # Normalize the images to [-1, 1]
@@ -59,22 +60,18 @@ with tf.device(logical_devices[0].name):
         input_shape=(32,32,3), input_tensor=inputs,pooling=None
     )"""
 
-
-
-
-
-    #noise = tf.random.normal([1, 100])
+    noise = tf.random.normal([1, 100])
     generator = models.make_generator_model(latent_dim=100)
     # summarize the model
-    generator.summary()
+    #generator.summary()
 
-    #generated_image = generator(noise, training=False)
-    #print(generated_image[0, :, :, 0].shape)
+    generated_image = generator(noise, training=False)
+    #print(generated_image.shape)
     #print(x_train[0,:].shape)
-    #plt.imshow(generated_image[0, :, :, 0], cmap='gray')
-    #plt.show()
+    plt.imshow((generated_image[0, :, :, :] * 127.5 + 127.5 )/255)
+    plt.show()
     discriminator = models.make_discriminator_model()
-    #decision = discriminator(generated_image)
+    decision = discriminator(generated_image)
     #print (decision)
 
 
@@ -87,6 +84,11 @@ with tf.device(logical_devices[0].name):
                                      discriminator_optimizer=discriminator_optimizer,
                                      generator=generator,
                                      discriminator=discriminator)
+
+    #loss tracker
+    g_loss_tracker = metrics.Mean(name="loss")
+    d_loss_tracker = metrics.Mean(name="loss")
+
     ## Training Loop
 
     EPOCHS = cfg.nof_epochs
@@ -102,16 +104,22 @@ with tf.device(logical_devices[0].name):
     # This annotation causes the function to be "compiled".
     @tf.function
     def train_step(images):
-        noise = tf.random.normal([cfg.BATCH_SIZE, noise_dim])
+        noise = tf.random.normal([images.shape[0], noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-          generated_images = generator(noise, training=True)
+            image_noises=tf.clip_by_value(generator(noise, training=True),-1,1)
+            adv_images = tf.clip_by_value(images+cfg.epsilon*image_noises,-1,1)
+            aug_images = tf.clip_by_value(data_augmentation(images), -1, 1)
 
-          real_output = discriminator(images, training=True)
-          fake_output = discriminator(generated_images, training=True)
+            real_output = discriminator(images, training=True)
+            fake_output = discriminator(adv_images, training=True)
 
-          gen_loss = models.generator_loss(fake_output)
-          disc_loss = models.discriminator_loss(real_output, fake_output)
+            gen_loss = models.generator_loss(images,aug_images,adv_images)
+            disc_loss = models.discriminator_loss(real_output, fake_output)
+
+
+        #print("Generator loss: ", gen_loss)
+        #print("Discriminator loss: ", disc_loss)
 
         gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
         gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
@@ -119,13 +127,20 @@ with tf.device(logical_devices[0].name):
         generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
         discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
 
+        g_loss_tracker.update_state(gen_loss)
+        d_loss_tracker.update_state(disc_loss)
+        # Return a dict mapping metric names to current value
+        return {"g_loss": [g_loss_tracker.result() for m in [g_loss_tracker]],
+                "d_loss": [d_loss_tracker.result() for m in [d_loss_tracker]]}
+
 
     def train(dataset, epochs):
       for epoch in range(epochs):
         start = time.time()
 
         for image_batch in dataset:
-          train_step(image_batch)
+            train_step(image_batch)
+
 
         # Produce images for the GIF as you go
         display.clear_output(wait=True)
@@ -134,10 +149,13 @@ with tf.device(logical_devices[0].name):
                                  seed)
 
         # Save the model every 15 epochs
-        if (epoch + 1) % 15 == 0:
+        if (epoch + 1) % 5 == 0:
           checkpoint.save(file_prefix = checkpoint_prefix)
+          print("Generator loss: " + str(g_loss_tracker.result()) + "  Discriminator loss: " + str(
+              d_loss_tracker.result()))
+          print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
 
-        print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
+        #print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
 
       # Generate after the final epoch
       display.clear_output(wait=True)
@@ -146,20 +164,20 @@ with tf.device(logical_devices[0].name):
                                seed)
 
     def generate_and_save_images(model, epoch, test_input):
-      # Notice `training` is set to False.
-      # This is so all layers run in inference mode (batchnorm).
-      predictions = model(test_input, training=False)
+        # Notice `training` is set to False.
+        # This is so all layers run in inference mode (batchnorm).
+        predictions = model(test_input, training=False)
 
-      fig = plt.figure(figsize=(6, 6))
+        fig = plt.figure(figsize=(8, 8))
 
-      for i in range(predictions.shape[0]):
+        for i in range(predictions.shape[0]):
           plt.subplot(3, 3, i+1)
-          plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
+          plt.imshow((predictions[i, :, :, :] * 127.5 + 127.5 )/255) #cmap='gray'
           plt.axis('off')
 
-      plt.savefig('images/image_at_epoch_{:04d}.png'.format(epoch))
-      #plt.show()
-      plt.clf()
+        plt.savefig('images/image_at_epoch_{:04d}.png'.format(epoch))
+        #plt.show()
+
 
     #Image display
 
@@ -170,12 +188,13 @@ with tf.device(logical_devices[0].name):
     if not os.path.exists('images'):
         os.makedirs('images')
     #call train
-    train(train_dataset, cfg.nof_epochs)
+    checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
+    train(train_dataset, EPOCHS)
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
     # Display a single image using the epoch number
     display_image(EPOCHS)
     # create Animation
-    anim_file = 'dcgan.gif'
+    anim_file = 'gan.gif'
 
     with imageio.get_writer(anim_file, mode='I') as writer:
       filenames = glob.glob('images/image*.png')

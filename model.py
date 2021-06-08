@@ -19,8 +19,8 @@ import config as cfg
 #data augmentation layers
 data_augmentation = tf.keras.Sequential([
   layers.experimental.preprocessing.RandomFlip("horizontal"),
-  #layers.experimental.preprocessing.RandomRotation(0.1),
-  #layers.experimental.preprocessing.RandomZoom(0.1),
+  layers.experimental.preprocessing.RandomRotation(0.1),
+  layers.experimental.preprocessing.RandomZoom(0.1),
   data_util.ColorJitter_and_GrayScale(colorJitter_prob=0.8,grayScale_prob=0.2),
 ])
 

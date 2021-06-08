@@ -68,5 +68,5 @@ class ColorJitter_and_GrayScale(tf.keras.layers.Layer):
         if rand < self.grayScale_prob:
             images = tf.image.rgb_to_grayscale(images)
 
-        images = tf.clip_by_value(images, 0, 255)
+        images = tf.clip_by_value(images, -1, 1)
         return images
