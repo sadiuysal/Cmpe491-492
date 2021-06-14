@@ -43,7 +43,7 @@ with tf.device(logical_devices[0].name):
 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-    (x_train, y_train), (x_test, y_test) = (x_train[:2000,:], y_train[:2000,:]), (x_test[:100,:], y_test[:100,:])
+    (x_train, y_train), (x_test, y_test) = (x_train[:10000,:], y_train[:10000,:]), (x_test[:100,:], y_test[:100,:])
 
     #print(x_train.shape)
     train_images = (x_train - 127.5) / 127.5  # Normalize the images to [-1, 1]
