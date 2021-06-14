@@ -23,7 +23,7 @@ import tensorflow as tf
 #TODO temperature parameter
 def contrastive_Loss( output , adversarial_selection = True , temperature= 0.5 , _lambda = 256):
   if adversarial_selection:
-    N = int( output.shape[0]//3 )
+    #N = int( output.shape[0]//3 )
     #print("N : " + str(N))
     #print("outputs.shape : " + str(output.shape))
     # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.

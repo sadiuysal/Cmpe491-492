@@ -1,17 +1,12 @@
-from keras.models import Sequential, Model
-from keras.layers import Dense, Conv2DTranspose, Reshape, Flatten, Dropout, BatchNormalization
-from keras.layers import Conv2D
-from keras.layers import LeakyReLU
 import tensorflow as tf
 import objective as losses
-from keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
 import data_util
-import keras
+from tensorflow.keras import layers, Model, Input
 
 
 # This method returns a helper function to compute cross entropy loss
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
 
 tf.config.threading.set_inter_op_parallelism_threads(3)
 tf.config.threading.set_intra_op_parallelism_threads(3)
@@ -19,28 +14,28 @@ tf.config.threading.set_intra_op_parallelism_threads(3)
 
 
 def make_generator_model(latent_dim):
-    model = Sequential()
+    model = tf.keras.models.Sequential()
     # foundation for 4x4 image
     n_nodes = 256 * 8 * 8
-    model.add(Dense(n_nodes, input_dim=latent_dim,use_bias=False))
-    model.add(BatchNormalization())
-    model.add(LeakyReLU())
+    model.add(layers.Dense(n_nodes, input_dim=latent_dim,use_bias=False))
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
 
-    model.add(Reshape((8, 8, 256)))
+    model.add(layers.Reshape((8, 8, 256)))
 
     # upsample to 16x16
-    model.add(Conv2DTranspose(128, (6, 6), strides=(1, 1), padding='same',use_bias=False))
-    model.add(BatchNormalization())
-    model.add(LeakyReLU())
+    model.add(layers.Conv2DTranspose(128, (6, 6), strides=(1, 1), padding='same',use_bias=False))
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
 
     # upsample to 32x32
-    model.add(Conv2DTranspose(64, (6, 6), strides=(2, 2), padding='same',use_bias=False))
-    model.add(BatchNormalization())
-    model.add(LeakyReLU())
+    model.add(layers.Conv2DTranspose(64, (6, 6), strides=(2, 2), padding='same',use_bias=False))
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
 
     #print("Before Out layer dimension : ",model.output_shape )
     # output layer
-    model.add(Conv2DTranspose(3, (6, 6),strides=(2, 2), activation='tanh', padding='same',use_bias=False))
+    model.add(layers.Conv2DTranspose(3, (6, 6),strides=(2, 2), activation='tanh', padding='same',use_bias=False))
     #print("After Out layer dimension : ", model.output_shape)
 
 
@@ -53,7 +48,8 @@ def make_generator_model(latent_dim):
 
 def make_discriminator_model():
     in_shape = (32, 32, 3)
-    model = Sequential()
+    #model = Sequential()
+    """
     # normal
     model.add(Conv2D(64, (6, 6),strides=(2, 2), padding='same', input_shape=in_shape))
     model.add(LeakyReLU())
@@ -62,21 +58,28 @@ def make_discriminator_model():
     model.add(Conv2D(128, (6, 6), strides=(2, 2), padding='same'))
     model.add(LeakyReLU())
     model.add(Dropout(0.3))
-
+    print("1-Out layer dimension : ",model.output_shape )
     # classifier
     model.add(Flatten())
+    print("2-Out layer dimension : ",model.output_shape )
     model.add(Dense(1))
-
-    #return model
+    print("3-Out layer dimension : ", model.output_shape)
+    #return model"""
 
     """"# compile model ##LOOK HERE
     opt = Adam(lr=0.0002, beta_1=0.5)
     model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])"""
-    #inputs = keras.Input(shape=(None,32, 32, 3))
+    inputs = Input(shape=(32, 32, 3))
     base_model = tf.keras.applications.ResNet50(
-        include_top=False, weights='imagenet',input_shape=(32,32,3),
+        include_top=False, weights='imagenet',input_shape=in_shape,input_tensor=inputs,
         pooling="avg"
     )
+    #Flatten output layer of Resnet
+    #flattened = Flatten()(base_model.output)
+    dense_layer =layers.Dense(1,activation="sigmoid")(base_model.output)
+    model = Model(inputs=base_model.input, outputs=dense_layer)
+
+    #print("*1-Out layer dimension : ", model.output_shape)
     #x = base_model.output
     #x = Dropout(0.3)(x)
     #x = Flatten()(x)
