@@ -1,7 +1,7 @@
 
 adversarial_attack = True
 _lambda = 64 #256 in RoCL
-nof_epochs = 10 #
+nof_epochs = 20 #
 attacks_itr_count = 7
 attacks_step_size = 1.8
 

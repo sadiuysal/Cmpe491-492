@@ -66,7 +66,7 @@ with tf.device(logical_devices[0].name):
 
     backbone,classifier = models.make_discriminator_model()
     test_accuracy_2(test_images,test_labels,classifier)
-    classifier = models.fineTuneonCifar10(classifier,x_train,y_train,isLoad=False)
+    classifier = models.fineTuneonCifar10(classifier,x_train,y_train,isLoad=True)
     test_accuracy_2(test_images, test_labels, classifier)
 
 
@@ -189,7 +189,7 @@ with tf.device(logical_devices[0].name):
         #print(predictions[:10,:])
         #print(prediction_labels[:10])
         #print("True labels: ", labels[:10])
-        print("Accuracy score on given test data: ")
+        print("Current Accuracy: ")
         m = tf.keras.metrics.Accuracy()
         m.update_state(labels,prediction_labels)
         print(m.result())
@@ -211,7 +211,6 @@ with tf.device(logical_devices[0].name):
     #call train
     #checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
-"""
     train(train_dataset, EPOCHS)
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
     # Display a single image using the epoch number
@@ -229,7 +228,7 @@ with tf.device(logical_devices[0].name):
       writer.append_data(image)
 
 import tensorflow_docs.vis.embed as embed
-embed.embed_file(anim_file)"""
+embed.embed_file(anim_file)
 
 
 
