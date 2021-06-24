@@ -18,6 +18,9 @@ import PIL
 import imageio as imageio
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.utils import np_utils
+
 import config as cfg
 from keras import metrics
 import data_util
@@ -25,6 +28,7 @@ import models
 import os
 from models import data_augmentation
 from IPython import display
+import numpy as np
 
 
 
@@ -32,14 +36,24 @@ logical_devices = tf.config.list_logical_devices('CPU')
 print("Num CPUs:", len(logical_devices))
 
 
+
 def test_accuracy_2(images, labels, model):
-    predictions = model(images)
+    dataset = tf.data.Dataset.from_tensor_slices(images).batch(int(images.shape[0]/4))
+    for (ind,batch) in enumerate(dataset):
+        if ind==0:
+            predictions = model(batch)
+        else:
+            predictions = tf.concat([predictions, model(batch)], 0)
+
 
     prediction_labels = tf.math.argmax(predictions, 1)
+    prediction_labels = np_utils.to_categorical(prediction_labels, 10)
     print("Accuracy score: ")
     m = tf.keras.metrics.Accuracy()
     m.update_state(labels, prediction_labels)
     print(m.result())
+
+
 
 with tf.device(logical_devices[0].name):
 
@@ -50,26 +64,39 @@ with tf.device(logical_devices[0].name):
 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-    #(x_train, y_train), (x_test, y_test) = (x_train[:300,:], y_train[:300,:]), (x_test[:100,:], y_test[:100,:])
+    #(x_train, y_train), (x_test, y_test) = (x_train[:,:], y_train[:,:]), (x_test[:1000,:], y_test[:1000,:])
+    #Normalize to [0,1]
+    x_train = x_train / 255.0
+    x_test = x_test / 255.0
 
-    #print(x_train.shape)
-    train_images = (x_train - 127.5) / 127.5  # Normalize the images to [-1, 1]
-    #TODO change later on
-    test_images = x_test
-    test_labels = y_test
+    # Change labels to binary class labels
+    y_train = np_utils.to_categorical(y_train, 10)
+    y_test = np_utils.to_categorical(y_test, 10)
+
+
+
+
+
 
     # Batch and shuffle the data
-    train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(cfg.BUFFER_SIZE).batch(cfg.BATCH_SIZE)
+    #train_dataset = tf.data.Dataset.from_tensor_slices(x_train).shuffle(cfg.BUFFER_SIZE).batch(cfg.BATCH_SIZE)
+
 
     noise = tf.random.normal([1, 100])
     generator = models.make_generator_model(latent_dim=100)
 
-    backbone,classifier = models.make_discriminator_model()
-    test_accuracy_2(test_images,test_labels,classifier)
-    classifier = models.fineTuneonCifar10(classifier,x_train,y_train,isLoad=True)
-    test_accuracy_2(test_images, test_labels, classifier)
+    backbone, classifier = models.make_discriminator_model()
 
+    #test_accuracy_2(x_test,y_test,classifier)
+    backbone,classifier = models.fineTuneonCifar10(backbone,classifier,x_train,y_train,x_test,y_test,isLoad=True)
+    #backbone.summary()
+    test_accuracy_2(x_test, y_test, classifier)
 
+    #
+    #print(x_train.shape)
+    x_train = (x_train - 0.5) * 2  # Normalize the images to [-1, 1]
+    #TODO change later on
+    x_test = (x_test - 0.5) * 2   # Normalize the images to [-1, 1]
 
 
     generator_optimizer = tf.keras.optimizers.Adam(1e-4)
@@ -94,8 +121,8 @@ with tf.device(logical_devices[0].name):
     # You will reuse this seed overtime (so it's easier)
     # to visualize progress in the animated GIF)
     seed = tf.random.normal([num_examples_to_generate, noise_dim])
-    x_test_sample=test_images[:num_examples_to_generate,:]
-    y_test_sample=test_labels[:num_examples_to_generate,:]
+    x_test_sample=x_test[:num_examples_to_generate,:]
+    y_test_sample=y_test[:num_examples_to_generate,:]
 
     # Notice the use of `tf.function`
     # This annotation causes the function to be "compiled".
@@ -155,12 +182,12 @@ with tf.device(logical_devices[0].name):
           epoch_avg_time /= 5
           print('Avg time for 5 epoch is {} sec'.format(epoch_avg_time))
           epoch_avg_time = 0
-          test_accuracy(test_images,test_labels,classifier)
+          test_accuracy(x_test,y_test,classifier,generator)
 
 
         if epoch == 0:
             print('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
-            test_accuracy(test_images, test_labels, classifier)
+            test_accuracy(x_test, y_test, classifier,generator)
 
       # Generate after the final epoch
       display.clear_output(wait=True)
@@ -175,23 +202,24 @@ with tf.device(logical_devices[0].name):
 
         for i in range(adv_images.shape[0]):
           plt.subplot(3, 3, i+1)
-          plt.imshow((adv_images[i, :, :, :] * 127.5 + 127.5 )/255) #cmap='gray'
+          plt.imshow(((adv_images[i, :, :, :] + 1 ) / 2 )) #cmap='gray'
           plt.axis('off')
 
         plt.savefig('images/image_at_epoch_{:04d}.png'.format(epoch))
         #plt.show()
 
 
-    def test_accuracy(images,labels,model):
-        predictions = model(images)
+    def test_accuracy(images,labels,classifier_model,generator_model):
+        _noise = tf.random.normal([images.shape[0], noise_dim])
+        _image_noises = tf.clip_by_value(generator_model(_noise, training=False), -1, 1)
+        _adv_images = tf.clip_by_value(images + cfg.epsilon * _image_noises, -1, 1)
 
-        prediction_labels = tf.math.argmax(predictions, 1)
-        #print(predictions[:10,:])
-        #print(prediction_labels[:10])
-        #print("True labels: ", labels[:10])
+        _adv_images = (_adv_images + 1) / 2 #change range to [0,1]
+        predictions = classifier_model(_adv_images)
+
         print("Current Accuracy: ")
         m = tf.keras.metrics.Accuracy()
-        m.update_state(labels,prediction_labels)
+        m.update_state(labels,predictions)
         print(m.result())
         #accuracy_score(test_labels, prediction_labels)
 
@@ -211,8 +239,8 @@ with tf.device(logical_devices[0].name):
     #call train
     #checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
-    train(train_dataset, EPOCHS)
-    checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
+    #train(train_dataset, EPOCHS)
+    #checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
     # Display a single image using the epoch number
     display_image(EPOCHS)
     # create Animation

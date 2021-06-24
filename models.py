@@ -1,21 +1,38 @@
 import tensorflow as tf
+from tensorflow import keras
 from tensorflow.python.keras.layers import GlobalAveragePooling2D, Dropout
+from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.python.keras.utils import np_utils
 
 import objective as losses
 from tensorflow.keras.layers.experimental import preprocessing
 import data_util
-from tensorflow.keras import layers, Model, Input
+from tensorflow.keras import layers, Model, Input, optimizers
 import config as cfg
 import os
 from tensorflow.python.keras.losses import SparseCategoricalCrossentropy
 
 
+tf.config.threading.set_inter_op_parallelism_threads(3)
+tf.config.threading.set_intra_op_parallelism_threads(3)
+
+
+
 # This method returns a helper function to compute cross entropy loss
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
+m = tf.keras.metrics.Accuracy()
+#custom accuracy metric
+def custom_acc(y_true, y_pred):
 
-tf.config.threading.set_inter_op_parallelism_threads(6)
-tf.config.threading.set_intra_op_parallelism_threads(6)
+    #print(y_pred)
+    prediction_labels = tf.math.argmax(y_pred, 1)
+    #print(prediction_labels)
+    #prediction_labels = np_utils.to_categorical(prediction_labels[1], 10)
+    prediction_labels = tf.one_hot(prediction_labels, 10)
+    m.update_state(y_true, prediction_labels)
+    return m.result()
+
 
 
 
@@ -54,29 +71,74 @@ def make_generator_model(latent_dim):
 
 
 def make_discriminator_model():
-    in_shape = (32, 32, 3)
+    """in_shape = (32, 32, 3)
     inputs = Input(shape=(32, 32, 3))
     backbone = tf.keras.applications.ResNet50(
         include_top=False, weights='imagenet',input_shape=in_shape,input_tensor=inputs,
         pooling="avg"
-    )
-    backbone_ENetB0 = tf.keras.applications.efficientnet.EfficientNetB0(
-        include_top=False, weights='imagenet', input_tensor=inputs,
-        input_shape=in_shape
-    )
+    )"""
+    """backbone_ENetB0 = tf.keras.applications.efficientnet.EfficientNetB0(
+        include_top=True, input_tensor=inputs,
+        input_shape=in_shape, pooling="avg", classes=10, activation="softmax"
+    )"""
+
     # Freeze the pretrained weights
-    backbone_ENetB0.trainable = False
-    print("Backbone ENetB0 out shape: ",backbone_ENetB0.output_shape)
+    #backbone_ENetB0.trainable = False
+    #print("ENetB0 out shape: ",ENetB0.output_shape)
+    in_shape = (32, 32, 3)
+    model_backbone,model_classifier = Sequential(), Sequential()
 
+    model_classifier.add(layers.InputLayer(input_shape=in_shape))
+    model_classifier.add(layers.UpSampling2D((2, 2)))
+    model_classifier.add(layers.UpSampling2D((2, 2)))
+    print("End of upsampling: ", model_classifier.output_shape)
+    model_backbone.add(layers.InputLayer(input_shape=in_shape))
+    model_backbone.add(layers.UpSampling2D((2, 2)))
+    model_backbone.add(layers.UpSampling2D((2, 2)))
 
-    x = GlobalAveragePooling2D()(backbone_ENetB0.output)
-    x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.2, name="top_dropout")(x)
-    outputs = layers.Dense(cfg.class_num,activation="softmax")(x)
-    classifier_ENetB0 = Model(inputs=backbone_ENetB0.input, outputs=outputs)
-    print("Classifier ENetB0 out shape: ",classifier_ENetB0.output_shape)
+    """
+    ENetB0 = tf.keras.applications.efficientnet.EfficientNetB0(
+        include_top=False, weights='imagenet',
+        pooling="avg"
+    )"""
+    ENetB0 = tf.keras.applications.efficientnet.EfficientNetB0(
+        include_top=True, weights=None,input_shape=(128,128,3),
+        classes=10,classifier_activation="softmax")
 
-    return backbone_ENetB0,classifier_ENetB0
+    ENetB0_backbone = tf.keras.applications.efficientnet.EfficientNetB0(
+        include_top=False, weights=None,input_shape=(128,128,3),pooling='avg')
+
+    #ENetB0.summary()
+    #ENetB0_backbone.summary()
+
+    #ENetB0.trainable = False
+    for l in ENetB0.layers[:-6]:
+        l.trainable = False
+
+    model_classifier.add(ENetB0)
+    model_backbone.add(ENetB0_backbone)
+    #print(model_backbone.layers())
+    #model.summary()
+    """
+    model_classifier = Sequential()
+    #model_classifier.add(keras.Input(shape=(256,256,3)))
+    model_classifier.add(model_backbone)
+    model_classifier.add(layers.Flatten())
+    model_classifier.add(layers.BatchNormalization())
+    #model_classifier.add(layers.Dense(128, activation='relu'))
+    #model_classifier.add(layers.Dropout(0.5))
+    #model_classifier.add(layers.BatchNormalization())
+    model_classifier.add(layers.Dense(64, activation='relu'))
+    model_classifier.add(layers.Dropout(0.5))
+    model_classifier.add(layers.BatchNormalization())
+    model_classifier.add(layers.Dense(10, activation='softmax'))
+    #model_classifier.summary()
+    #x = GlobalAveragePooling2D()(backbone_ENetB0.output)
+    # TODO Lrelu(0.1) Dense (check dimension ex. 1080) (class:512)
+    # use this feature #"""
+
+    #return backbone_ENetB0,classifier_ENetB0
+    return model_backbone,model_classifier
 
     #Flatten output layer of Resnet
     #flattened = Flatten()(base_model.output)
@@ -99,7 +161,7 @@ def generator_loss(backbone_model,org_images,aug_images,adv_images):
     #return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
-def fineTuneonCifar10(classifier,x_train,y_train,isLoad):
+def fineTuneonCifar10(backbone,classifier,x_train,y_train,x_test,y_test,isLoad):
     # Save finetuned model with callback
     checkpoint_path = "finetuned/cp.ckpt"
     checkpoint_dir = os.path.dirname(checkpoint_path)
@@ -109,21 +171,25 @@ def fineTuneonCifar10(classifier,x_train,y_train,isLoad):
                                                      verbose=1)
     if isLoad:
         # Loads the weights
-        classifier.load_weights(checkpoint_path)
+        checkpoint = tf.train.Checkpoint(classifier)
+        checkpoint.restore(checkpoint_path).expect_partial()
         classifier.trainable = False
+        checkpoint = tf.train.Checkpoint(backbone)
+        checkpoint.restore(checkpoint_path).expect_partial()
+        backbone.trainable = False
     else:
         # Loads the weights
         #classifier.load_weights(checkpoint_path)
         # Finetuning on cifar10
-        loss_fn = SparseCategoricalCrossentropy(from_logits=False)
+        #loss_fn = SparseCategoricalCrossentropy(from_logits=False)
         #classifier.summary()
         classifier.trainable = True
-        for l in classifier.layers[:-3]:
-            l.trainable = False
-        classifier.compile(optimizer=Adam(learning_rate=1e-4, decay=1e-4 / 150), loss=loss_fn)
-        classifier.fit(x_train, y_train, callbacks=[cp_callback],epochs=150)
+        classifier.compile(optimizer='adam', loss='categorical_crossentropy', metrics=[custom_acc])
+        history = classifier.fit(x_train, y_train, epochs=2, callbacks=[cp_callback],batch_size=128 )
 
-    return classifier
+    return backbone, classifier
+
+
 
 
 
