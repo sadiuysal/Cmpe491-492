@@ -4,7 +4,7 @@ from tensorflow.python.keras.models import Sequential
 import objective as losses
 from tensorflow.keras.layers.experimental import preprocessing
 import data_util
-from tensorflow.keras import layers, Model, Input, optimizers
+from tensorflow.keras import layers
 import config as cfg
 import os
 import matplotlib.pyplot as plt

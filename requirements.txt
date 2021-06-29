@@ -5,5 +5,4 @@ sklearn
 keras
 tensorflow == 2.5.0
 IPython
--q imageio
--q git+https://github.com/tensorflow/docs
+imageio
