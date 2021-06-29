@@ -1,5 +1,5 @@
 _lambda = 64 #256 in RoCL
-nof_epochs = 1 #
+nof_epochs = 10 #
 ##
 BATCH_SIZE = 64 # default 64
 class_num = 10

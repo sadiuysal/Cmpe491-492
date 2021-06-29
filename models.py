@@ -9,7 +9,7 @@ import config as cfg
 import os
 import matplotlib.pyplot as plt
 
-
+# Thread limit statements
 #tf.config.threading.set_inter_op_parallelism_threads(4)
 #tf.config.threading.set_intra_op_parallelism_threads(5)
 
