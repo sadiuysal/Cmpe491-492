@@ -21,33 +21,24 @@ import config as cfg
 import data_util
 import models
 import os
+import tensorflow_docs.vis.embed as embed
 
 
 
-logical_devices = tf.config.list_logical_devices('CPU')
-print("Num CPUs:", len(logical_devices))
+logical_devices_CPU = tf.config.list_logical_devices('CPU')
+print("Num CPUs:", len(logical_devices_CPU))
+
+logical_devices_GPU = tf.config.list_logical_devices('GPU')
+print("Num GPUs:", len(logical_devices_GPU))
+
+logical_devices_TPU = tf.config.list_logical_devices('TPU')
+print("Num TPUs:", len(logical_devices_TPU))
+
+# TO SET SPECIFIC DEVICE TYPE
+device = logical_devices_CPU
 
 
-
-def test_accuracy_2(images, labels, model):
-    dataset = tf.data.Dataset.from_tensor_slices(images).batch(1024)
-    for (ind,batch) in enumerate(dataset):
-        if ind==0:
-            predictions = model(batch)
-        else:
-            predictions = tf.concat([predictions, model(batch)], 0)
-
-
-    prediction_labels = tf.math.argmax(predictions, 1)
-    prediction_labels = np_utils.to_categorical(prediction_labels, 10)
-    print("Accuracy score: ")
-    m = tf.keras.metrics.Accuracy()
-    m.update_state(labels, prediction_labels)
-    print(m.result())
-
-
-
-with tf.device(logical_devices[0].name):
+with tf.device(device[0].name):
 
     """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
@@ -153,7 +144,7 @@ with tf.device(logical_devices[0].name):
       image = imageio.imread(filename)
       writer.append_data(image)
 
-import tensorflow_docs.vis.embed as embed
+
 embed.embed_file(anim_file)
 
 
