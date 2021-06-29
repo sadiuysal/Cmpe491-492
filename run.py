@@ -29,13 +29,14 @@ print("Num CPUs:", len(logical_devices_CPU))
 
 logical_devices_GPU = tf.config.list_logical_devices('GPU')
 print("Num GPUs:", len(logical_devices_GPU))
+print("GPU devices: \n", logical_devices_GPU)
 
 logical_devices_TPU = tf.config.list_logical_devices('TPU')
 print("Num TPUs:", len(logical_devices_TPU))
 
 # TO SET SPECIFIC DEVICE TYPE
 device = logical_devices_CPU
-
+os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
 strategy = tf.distribute.MirroredStrategy()
 
 #with tf.device(device[0].name):
