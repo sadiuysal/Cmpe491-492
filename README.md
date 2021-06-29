@@ -35,7 +35,7 @@ Install requirements and run:
 
 * $ pip install -r requirements.txt
 
-Change config.py if needed. Then:
+Change config.py if needed.Change running device(CPU,GPU,TPU) by setting device in run.py. Then:
 
 * $ python3 run.py
 * $ deactivate
