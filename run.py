@@ -38,7 +38,7 @@ print("Num CPUs:", len(logical_devices))
 
 
 def test_accuracy_2(images, labels, model):
-    dataset = tf.data.Dataset.from_tensor_slices(images).batch(int(images.shape[0]/4))
+    dataset = tf.data.Dataset.from_tensor_slices(images).batch(1024)
     for (ind,batch) in enumerate(dataset):
         if ind==0:
             predictions = model(batch)
@@ -64,10 +64,14 @@ with tf.device(logical_devices[0].name):
 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-    #(x_train, y_train), (x_test, y_test) = (x_train[:,:], y_train[:,:]), (x_test[:1000,:], y_test[:1000,:])
-    #Normalize to [0,1]
-    x_train = x_train / 255.0
+    (x_train, y_train), (x_test, y_test) = (x_train[:128*100,:], y_train[:128*100,:]), (x_test[:,:], y_test[:,:])
+
+    x_train = x_train / 255.0  #Normalize to [0,1]
     x_test = x_test / 255.0
+
+    x_train = (x_train - 0.5) * 2  # Normalize the images to [-1, 1]
+    x_test = (x_test - 0.5) * 2   # Normalize the images to [-1, 1]
+
 
     # Change labels to binary class labels
     y_train = np_utils.to_categorical(y_train, 10)
@@ -75,44 +79,30 @@ with tf.device(logical_devices[0].name):
 
 
 
+    #generator = models.make_generator_model(latent_dim=100)
 
+    #backbone, classifier = models.make_discriminator_model()
+
+    #test_accuracy_2(x_test,y_test,classifier)
+    #backbone,classifier = models.fineTuneonCifar10(backbone,classifier,x_train,y_train,x_test,y_test,isLoad=True)
+
+    #print("Initial train set acc:\n")
+    #test_accuracy_2(x_train, y_train, classifier)
+    #print("Initial test set acc:\n")
+    #test_accuracy_2(x_test, y_test, classifier)
+
+    #
 
 
     # Batch and shuffle the data
-    #train_dataset = tf.data.Dataset.from_tensor_slices(x_train).shuffle(cfg.BUFFER_SIZE).batch(cfg.BATCH_SIZE)
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(cfg.BUFFER_SIZE).batch(
+        cfg.BATCH_SIZE,drop_remainder=True,num_parallel_calls=tf.data.AUTOTUNE)
+    test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(cfg.BUFFER_SIZE).batch(
+        cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE)
 
 
-    noise = tf.random.normal([1, 100])
-    generator = models.make_generator_model(latent_dim=100)
-
-    backbone, classifier = models.make_discriminator_model()
-
-    #test_accuracy_2(x_test,y_test,classifier)
-    backbone,classifier = models.fineTuneonCifar10(backbone,classifier,x_train,y_train,x_test,y_test,isLoad=True)
-    #backbone.summary()
-    test_accuracy_2(x_test, y_test, classifier)
-
-    #
-    #print(x_train.shape)
-    x_train = (x_train - 0.5) * 2  # Normalize the images to [-1, 1]
-    #TODO change later on
-    x_test = (x_test - 0.5) * 2   # Normalize the images to [-1, 1]
-
-
-    generator_optimizer = tf.keras.optimizers.Adam(1e-4)
-    #discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
-    ## Save Checkpoints
-    checkpoint_dir = './training_checkpoints'
-    checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-    checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
-                                     generator=generator)
-
-    #loss tracker
-    g_loss_tracker = metrics.Mean(name="loss")
-    #d_loss_tracker = metrics.Mean(name="loss")
-
-    ## Training Loop
-
+    generator_optimizer = tf.keras.optimizers.Adam(1e-4) #optimizer
+    g_loss_tracker = metrics.Mean(name="loss")          #loss tracker
     EPOCHS = cfg.nof_epochs
     noise_dim = 100
     num_examples_to_generate = 9
@@ -124,6 +114,40 @@ with tf.device(logical_devices[0].name):
     x_test_sample=x_test[:num_examples_to_generate,:]
     y_test_sample=y_test[:num_examples_to_generate,:]
 
+    backbone, classifier = models.make_discriminator_model()
+    backbone, classifier = models.fineTuneonCifar10(backbone, classifier, isLoad=True)
+    generator = models.make_generator_model(latent_dim=100)
+    augmentation_layer = models.data_augmentation
+
+
+    # Save model with callback
+    checkpoint_path_generator = "output/custom_GAN/cp.ckpt"
+    checkpoint_dir = os.path.dirname(checkpoint_path_generator)
+    # Create a callback that saves the model's weights
+    cp_callback_ = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path_generator,
+                                                     save_weights_only=True,
+                                                     verbose=1,save_freq="epoch")
+
+
+    gan = models.GAN(backbone, classifier, generator, augmentation_layer, [x_test_sample,y_test_sample])
+
+    gan.compile(generator_optimizer,g_loss_tracker,models.generator_loss)
+
+    test_acc = gan.evaluate(test_dataset)
+    print("Initial test set accuracy: "+ str(test_acc))
+
+    gan.fit(train_dataset,epochs=EPOCHS, batch_size=cfg.BATCH_SIZE, callbacks=[cp_callback_,models.CustomCallback()])
+
+    # The model weights (that are considered the best) are loaded into the model.
+    gan.load_weights(checkpoint_path_generator)
+    test_acc = gan.evaluate(test_dataset)
+    print("Current test set accuracy: "+ str(test_acc))
+    #gan.fit(train_dataset,epochs=EPOCHS, batch_size=cfg.BATCH_SIZE, callbacks=[cp_callback_])
+
+
+
+
+    """
     # Notice the use of `tf.function`
     # This annotation causes the function to be "compiled".
     @tf.function
@@ -158,12 +182,11 @@ with tf.device(logical_devices[0].name):
 
 
     def train(dataset, epochs):
-      epoch_avg_time = 0
       for epoch in range(epochs):
         start = time.time()
 
         for image_batch in dataset:
-            train_step(image_batch)
+            models.train_step(image_batch)
 
 
         # Produce images for the GIF as you go
@@ -173,15 +196,11 @@ with tf.device(logical_devices[0].name):
                                  seed)
 
 
-        epoch_avg_time += time.time() - start
 
         # Save the model every 5 epochs
         if (epoch + 1) % 5 == 0:
           checkpoint.save(file_prefix = checkpoint_prefix)
           print("Epoch "+str(epoch+1)+" Generator loss: " + str(g_loss_tracker.result()))
-          epoch_avg_time /= 5
-          print('Avg time for 5 epoch is {} sec'.format(epoch_avg_time))
-          epoch_avg_time = 0
           test_accuracy(x_test,y_test,classifier,generator)
 
 
@@ -194,6 +213,8 @@ with tf.device(logical_devices[0].name):
       generate_and_save_images(generator,
                                epochs,
                                seed)
+
+
 
     def generate_and_save_images(model, epoch, test_input):
         image_noises = tf.clip_by_value(model(test_input, training=False), -1, 1)
@@ -220,34 +241,24 @@ with tf.device(logical_devices[0].name):
         print("Current Accuracy: ")
         m = tf.keras.metrics.Accuracy()
         m.update_state(labels,predictions)
-        print(m.result())
-        #accuracy_score(test_labels, prediction_labels)
+        print(m.result())"""
 
 
 
     #Image display
 
     def display_image(epoch_no):
-      return PIL.Image.open('images/image_at_epoch_{:04d}.png'.format(epoch_no))
+      return PIL.Image.open('output/images/image_at_epoch_{:04d}.png'.format(epoch_no))
 
 
 
-
-    if not os.path.exists('images'):
-        os.makedirs('images')
-
-    #call train
-    #checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
-
-    #train(train_dataset, EPOCHS)
-    #checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
     # Display a single image using the epoch number
-    display_image(EPOCHS)
+    #display_image(EPOCHS)
     # create Animation
-    anim_file = 'gan.gif'
+    anim_file = 'output/gan.gif'
 
     with imageio.get_writer(anim_file, mode='I') as writer:
-      filenames = glob.glob('images/image*.png')
+      filenames = glob.glob('output/images/image*.png')
       filenames = sorted(filenames)
       for filename in filenames:
         image = imageio.imread(filename)
