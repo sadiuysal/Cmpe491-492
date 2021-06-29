@@ -16,9 +16,26 @@ Run below commands in order for training the model and saving trained models to 
 
 ### Alternatively:
 
+Create env: 
+
 * $ python3 -m venv env_492
 * $ source env_492/bin/activate
+
+Upgrade pip:
+
 * $ pip3 install --upgrade pip
+
+Clone the repo and set current branch :
+
+* $ git clone git@github.com:sadiuysal/Cmpe491-492.git
+* $ cd Cmpe491-492/
+* $ git checkout 492-dev-2
+
+Install requirements and run:
+
 * $ pip install -r requirements.txt
+
+Change config.py if needed.Change running device(CPU,GPU,TPU) by setting device in run.py. Then:
+
 * $ python3 run.py
 * $ deactivate
