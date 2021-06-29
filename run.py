@@ -23,7 +23,7 @@ import models
 import os
 import tensorflow_docs.vis.embed as embed
 
-
+os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
 logical_devices_CPU = tf.config.list_logical_devices('CPU')
 print("Num CPUs:", len(logical_devices_CPU))
 
@@ -35,12 +35,12 @@ logical_devices_TPU = tf.config.list_logical_devices('TPU')
 print("Num TPUs:", len(logical_devices_TPU))
 
 # TO SET SPECIFIC DEVICE TYPE
-device = logical_devices_CPU
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
-strategy = tf.distribute.MirroredStrategy()
+device = logical_devices_GPU
 
-#with tf.device(device[0].name):
-with strategy.scope():
+#strategy = tf.distribute.MirroredStrategy()
+
+with tf.device(device[1].name):
+#with strategy.scope():
 
     """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 
