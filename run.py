@@ -36,8 +36,10 @@ print("Num TPUs:", len(logical_devices_TPU))
 # TO SET SPECIFIC DEVICE TYPE
 device = logical_devices_CPU
 
+strategy = tf.distribute.MirroredStrategy()
 
-with tf.device(device[0].name):
+#with tf.device(device[0].name):
+with strategy.scope():
 
     """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
 

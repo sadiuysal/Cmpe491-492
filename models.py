@@ -172,7 +172,6 @@ class GAN(keras.Model):
         return _adv_images
 
 
-    @tf.function
     def test_step(self, data):
         labels = data[1]
         _adv_images = self.call(data)
@@ -183,13 +182,12 @@ class GAN(keras.Model):
 
         # Return a dict mapping metric names to current value.
         # Note that it will include the loss (tracked in self.metrics).
-        return {"acc":acc}
+        return {"test set acc":acc}
 
 
 
     # Notice the use of `tf.function`
     # This annotation causes the function to be "compiled".
-    @tf.function
     def train_step(self,data):
 
         images = data[0]
