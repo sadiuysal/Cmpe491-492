@@ -18,7 +18,6 @@ import tensorflow as tf
 from tensorflow.python.keras.utils import np_utils
 
 import config as cfg
-from keras import metrics
 import data_util
 import models
 import os
@@ -90,7 +89,7 @@ with tf.device(logical_devices[0].name):
 
 
     generator_optimizer = tf.keras.optimizers.Adam(1e-4) #optimizer
-    g_loss_tracker = metrics.Mean(name="loss")          #loss tracker
+    g_loss_tracker = tf.keras.metrics.Mean(name="loss")          #loss tracker
     EPOCHS = cfg.nof_epochs
     noise_dim = 100
     num_examples_to_generate = 9
