@@ -15,5 +15,5 @@ git commit -a -m "Model outputs. "
 echo "Pushing outputs to git: "
 git push
 
-source env_492/bin/deactivate
+deactivate
 
