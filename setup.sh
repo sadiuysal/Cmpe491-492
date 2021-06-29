@@ -15,8 +15,12 @@ echo "Setting env: "
 python3 -m venv env_492
 source env_492/bin/activate
 
-echo "Installing requirements: "
-pip install -r requirements.txt
+echo "Upgrade pip version: "
+pip3 install --upgrade pip
 
+echo "Installing requirements: "
+pip3 install -r requirements.txt
+
+deactivate
 
 
