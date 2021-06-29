@@ -1,15 +1,8 @@
-
-adversarial_attack = True
 _lambda = 64 #256 in RoCL
 nof_epochs = 1 #
-attacks_itr_count = 7
-attacks_step_size = 1.8
-
 ##
-IMG_SIZE = 32
-BATCH_SIZE = 128 # default 64
+BATCH_SIZE = 64 # default 64
 class_num = 10
 epsilon = 0.0625  # 0-255>>16
-
-##
+## buffer size for shuffling the data and creating batches
 BUFFER_SIZE = 60000

@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras.models import Sequential
-
 import objective as losses
 from tensorflow.keras.layers.experimental import preprocessing
 import data_util
@@ -9,7 +8,6 @@ from tensorflow.keras import layers, Model, Input, optimizers
 import config as cfg
 import os
 import matplotlib.pyplot as plt
-
 
 
 #tf.config.threading.set_inter_op_parallelism_threads(4)
@@ -222,7 +220,7 @@ class GAN(keras.Model):
 
         #d_loss_tracker.update_state(disc_loss)
         # Return a dict mapping metric names to current value
-        return {"g_loss": self.g_loss_tracker.result() , "acc": acc }
+        return {"g_loss": self.g_loss_tracker.result() , "training acc": acc }
 
 
 

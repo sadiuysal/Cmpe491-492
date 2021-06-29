@@ -23,16 +23,11 @@ import tensorflow as tf
 #TODO temperature parameter
 def contrastive_Loss( output , adversarial_selection = True , temperature= 0.5 , _lambda = 256):
   if adversarial_selection:
-    #N = int( output.shape[0]//3 )
-    #print("N : " + str(N))
-    #print("outputs.shape : " + str(output.shape))
+
     # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.
     #outputs = tf.reshape(output, [tf.shape(output)[0], tf.shape(output)[-1]], name=None)
     z_x, z_prime_x, z_adversaries = tf.split(output, num_or_size_splits=3, axis=0)
-    #z_x = tf.slice(outputs, [0, 0], [N, -1])
-    #z_prime_x = tf.slice(outputs, [N, 0], [2*N, -1])
-    #z_adversaries = tf.slice(outputs, [2*N, 0], [-1, -1])
-    #print(str(z_x.shape) + "  &&&&&&&&&&&&  " + str(z_prime_x.shape) + "  &&&&&&&&&&&&  " + str(z_adversaries.shape ))
+
     sim_matrix_1 = data_util.sim_matrix_with_temperature(z_x, z_prime_x, temperature)
     sim_matrix_2 = data_util.sim_matrix_with_temperature(z_x, z_adversaries, temperature)
     sim_matrix_3 = data_util.sim_matrix_with_temperature(z_adversaries,z_x , temperature)
@@ -44,12 +39,8 @@ def contrastive_Loss( output , adversarial_selection = True , temperature= 0.5 ,
     N=int( tf.shape(output)[0]/2 )
     # RESNET returns tensor with shapes [N,1,1,2048], so I reshaped it.
     outputs=tf.reshape(output, [ tf.shape(output)[0] ,tf.shape(output)[-1] ], name=None)
-    #print("N : " + str(N))
-    #print("outputs.shape : " + str(tf.shape(outputs)))
     z_x=tf.slice(outputs,[ 0,0 ],[ N ,-1 ])
-    #print(tf.shape(z_x))
     z_prime_x= tf.slice(outputs,[ N,0 ],[ -1 , -1 ])
-    #print(str(tf.shape(z_x)) + "  &&&&&&&&&&&&  " + str(tf.shape(z_prime_x) ))
     sim_matrix=data_util.sim_matrix_with_temperature(z_x,z_prime_x,temperature)
     loss = data_util.find_loss_from_sim_matrix(sim_matrix)
 
