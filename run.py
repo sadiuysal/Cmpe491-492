@@ -29,17 +29,18 @@ print("Num CPUs:", len(logical_devices_CPU))
 
 logical_devices_GPU = tf.config.list_logical_devices('GPU')
 print("Num GPUs:", len(logical_devices_GPU))
-print("GPU devices: \n", logical_devices_GPU)
+#print("GPU devices: \n", logical_devices_GPU)
 
 logical_devices_TPU = tf.config.list_logical_devices('TPU')
 print("Num TPUs:", len(logical_devices_TPU))
 
 # TO SET SPECIFIC DEVICE TYPE
-device = logical_devices_GPU
+device = logical_devices_CPU
 
+print("Using device :", device[0].name)
 #strategy = tf.distribute.MirroredStrategy()
 
-with tf.device(device[1].name):
+with tf.device(device[0].name):
 #with strategy.scope():
 
     """Load and prepare the [MNIST dataset](http://yann.lecun.com/exdb/mnist/). Convert the samples from integers to floating-point numbers:"""
