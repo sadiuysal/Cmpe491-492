@@ -6,6 +6,9 @@ pwd
 echo "Activating env: "
 source env_492/bin/activate
 
+echo "Fetching repo updates: "
+git pull
+
 echo "Running the model: "
 python3 run.py
 
