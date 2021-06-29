@@ -24,7 +24,6 @@ import os
 import tensorflow_docs.vis.embed as embed
 
 
-
 logical_devices_CPU = tf.config.list_logical_devices('CPU')
 print("Num CPUs:", len(logical_devices_CPU))
 
@@ -47,7 +46,7 @@ with tf.device(device[0].name):
 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-    (x_train, y_train), (x_test, y_test) = (x_train[:128*1,:], y_train[:128*1,:]), (x_test[:128,:], y_test[:128,:])
+    #(x_train, y_train), (x_test, y_test) = (x_train[:128*1,:], y_train[:128*1,:]), (x_test[:128,:], y_test[:128,:])
 
     x_train = x_train / 255.0  #Normalize to [0,1]
     x_test = x_test / 255.0
