@@ -40,6 +40,33 @@ device = logical_devices_CPU
 print("Using device :", device[0].name)
 #strategy = tf.distribute.MirroredStrategy()
 
+
+
+def test_accuracy_2(images, labels, model):
+    dataset = tf.data.Dataset.from_tensor_slices(images).batch(cfg.BATCH_SIZE)
+    for (ind,batch) in enumerate(dataset):
+        if ind==0:
+            predictions = model(batch)
+        else:
+            predictions = tf.concat([predictions, model(batch)], 0)
+
+
+    print("Accuracy score: ")
+    m = tf.keras.metrics.CategoricalAccuracy()
+    m.update_state(labels, predictions)
+    return m.result()
+
+def SetBatchNormalizationMomentum(model, new_value, prefix='', verbose=False):
+  for ii, layer in enumerate(model.layers):
+    if hasattr(layer, 'layers'):
+      SetBatchNormalizationMomentum(layer, new_value, f'{prefix}Layer {ii}/', verbose)
+      continue
+    elif isinstance(layer, tf.keras.layers.BatchNormalization):
+      if verbose:
+        print(f'{prefix}Layer {ii}: name={layer.name} momentum={layer.momentum} --> set momentum={new_value}')
+      layer.momentum = new_value
+
+
 with tf.device(device[0].name):
 #with strategy.scope():
 
@@ -50,43 +77,41 @@ with tf.device(device[0].name):
 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     x_train, x_test = data_util.cast_to_float32 ( x_train ) , data_util.cast_to_float32( x_test )
-    #(x_train, y_train), (x_test, y_test) = (x_train[:128*1,:], y_train[:128*1,:]), (x_test[:128,:], y_test[:128,:])
+    #(x_train, y_train), (x_test, y_test) = (x_train[:cfg.BATCH_SIZE*15,:], y_train[:cfg.BATCH_SIZE*15,:]), (x_test[:,:], y_test[:,:])
 
     x_train = x_train / 255.0  #Normalize to [0,1]
     x_test = x_test / 255.0
-
-    x_train = (x_train - 0.5) * 2  # Normalize the images to [-1, 1]
-    x_test = (x_test - 0.5) * 2   # Normalize the images to [-1, 1]
-
 
     # Change labels to binary class labels
     y_train = np_utils.to_categorical(y_train, 10)
     y_test = np_utils.to_categorical(y_test, 10)
 
+    # Batch and shuffle the data
+    train_ds_classifier = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(cfg.BUFFER_SIZE).batch(
+        cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE).take(100)
+    test_ds_classifier = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(cfg.BUFFER_SIZE).batch(
+        cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE)
 
+    backbone, classifier = models.make_discriminator_model()
+    SetBatchNormalizationMomentum(classifier,0.9)
+    SetBatchNormalizationMomentum(backbone,0.9)
+    backbone, classifier = models.trainClassifierCifar10(backbone, classifier,train_ds_classifier,test_ds_classifier, isTrain=False)
 
-    #generator = models.make_generator_model(latent_dim=100)
-
-    #backbone, classifier = models.make_discriminator_model()
-
-    #test_accuracy_2(x_test,y_test,classifier)
-    #backbone,classifier = models.fineTuneonCifar10(backbone,classifier,x_train,y_train,x_test,y_test,isLoad=True)
-
-
-
+    x_train = (x_train - 0.5) * 2  # Normalize the images to [-1, 1]
+    x_test = (x_test - 0.5) * 2   # Normalize the images to [-1, 1]
 
     # Batch and shuffle the data
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(cfg.BUFFER_SIZE).batch(
-        cfg.BATCH_SIZE,drop_remainder=True,num_parallel_calls=tf.data.AUTOTUNE)
+        cfg.BATCH_SIZE,drop_remainder=True,num_parallel_calls=tf.data.AUTOTUNE).take(200)
     test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(cfg.BUFFER_SIZE).batch(
         cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE)
 
 
-    generator_optimizer = tf.keras.optimizers.Adam(1e-4) #optimizer
-    g_loss_tracker = tf.keras.metrics.Mean(name="loss")          #loss tracker
     EPOCHS = cfg.nof_epochs
     noise_dim = 100
     num_examples_to_generate = 9
+
+
 
 
     # You will reuse this seed overtime (so it's easier)
@@ -95,13 +120,13 @@ with tf.device(device[0].name):
     x_test_sample=x_test[:num_examples_to_generate,:]
     y_test_sample=y_test[:num_examples_to_generate,:]
 
-    backbone, classifier = models.make_discriminator_model()
-    backbone, classifier = models.fineTuneonCifar10(backbone, classifier, isLoad=True)
+
     generator = models.make_generator_model(latent_dim=100)
     augmentation_layer = models.data_augmentation
 
+    generator_optimizer = tf.keras.optimizers.Adam(1e-4)  # optimizer
 
-    # Save model with callback
+#    Save model with callback
     checkpoint_path_generator = "output/custom_GAN/cp.ckpt"
     checkpoint_dir = os.path.dirname(checkpoint_path_generator)
     # Create a callback that saves the model's weights
@@ -111,17 +136,24 @@ with tf.device(device[0].name):
 
 
     gan = models.GAN(backbone, classifier, generator, augmentation_layer, [x_test_sample,y_test_sample])
-    gan.compile(generator_optimizer,g_loss_tracker,models.generator_loss)
+    gan.compile(generator_optimizer,models.generator_loss)
 
+    print("BEFORE LOADING, GAN test set accuracy: ")
     test_acc = gan.evaluate(test_dataset)
-    print("Initial test set accuracy: "+ str(test_acc))
 
-    gan.fit(train_dataset,epochs=EPOCHS, batch_size=cfg.BATCH_SIZE, callbacks=[cp_callback_,models.CustomCallback()])
+
+
+
+    #gan.fit(train_dataset,epochs=EPOCHS, batch_size=cfg.BATCH_SIZE,validation_data=(test_dataset),
+    #       callbacks=[cp_callback_,models.CustomCallback()])
+
+    #test_acc = gan.evaluate(test_dataset)
+    #print("AFTER TRAINING,GAN test set accuracy: "+ str(test_acc))
 
     # The model weights (that are considered the best) are loaded into the model.
     gan.load_weights(checkpoint_path_generator)
+    print("LOADED GAN Model test set accuracy: ")
     test_acc = gan.evaluate(test_dataset)
-    print("Current test set accuracy: "+ str(test_acc))
     #gan.fit(train_dataset,epochs=EPOCHS, batch_size=cfg.BATCH_SIZE, callbacks=[cp_callback_])
 
 

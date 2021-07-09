@@ -24,14 +24,28 @@ with tf.device(device[0].name):
 
     # This method returns a helper function to compute cross entropy loss
     cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
-    m = tf.keras.metrics.Accuracy()
+    #metric_test = tf.keras.metrics.Accuracy()
+    #metric_train = tf.keras.metrics.Accuracy()
+    m_train = tf.keras.metrics.CategoricalAccuracy()
+    m_test = tf.keras.metrics.CategoricalAccuracy()
+    m_classifier = tf.keras.metrics.CategoricalAccuracy()
+    g_loss_tracker = tf.keras.metrics.Mean(name="loss")          #loss tracker
 
-    #custom accuracy metric
-    def custom_acc(y_true, y_pred):
+
+    """#custom accuracy metric
+    def custom_acc(y_true, y_pred, isTest=False):
+        print("y_true: ", y_true)
+        print("y pred: ",y_pred )
         prediction_labels = tf.math.argmax(y_pred, 1)
+        print("y pred: ", prediction_labels)
         prediction_labels = tf.one_hot(prediction_labels, 10)
-        m.update_state(y_true, prediction_labels)
-        return m.result()
+        print("y pred: ", prediction_labels)
+        if isTest:
+            metric_test.update_state(y_true, prediction_labels)
+            return metric_test.result()
+        else:
+            metric_train.update_state(y_true, prediction_labels)
+            return metric_train.result()"""
 
 
 
@@ -78,12 +92,14 @@ with tf.device(device[0].name):
         model_backbone.add(layers.UpSampling2D((2, 2)))
         model_backbone.add(layers.UpSampling2D((2, 2)))
 
+
         ENetB0 = tf.keras.applications.efficientnet.EfficientNetB0(
             include_top=True, weights=None,input_shape=(128,128,3),
             classes=10,classifier_activation="softmax")
 
         ENetB0_backbone = tf.keras.applications.efficientnet.EfficientNetB0(
             include_top=False, weights=None,input_shape=(128,128,3),pooling='avg')
+
 
         for l in ENetB0.layers[:-6]:
             l.trainable = False
@@ -108,30 +124,49 @@ with tf.device(device[0].name):
         #return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
-    def fineTuneonCifar10(backbone,classifier,x_train=None ,y_train=None ,x_test=None ,y_test=None, isLoad=True):
+    def trainClassifierCifar10(backbone,classifier,train_ds ,test_ds, isTrain=False):
 
-
-
-        # Save finetuned model with callback
-        checkpoint_path = "output/finetuned_classifier/cp.ckpt"
+        # Save model progress checkpoint with callback
+        checkpoint_path = "output/classifier_LastCheckpoint"
         checkpoint_dir = os.path.dirname(checkpoint_path)
-        # Create a callback that saves the model's weights
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                         save_weights_only=True,
-                                                         verbose=1)
-        if isLoad:
-            # Loads the weights
-            checkpoint = tf.train.Checkpoint(classifier)
-            checkpoint.restore(checkpoint_path).expect_partial()
-            classifier.trainable = False
-            checkpoint = tf.train.Checkpoint(backbone)
-            checkpoint.restore(checkpoint_path).expect_partial()
-            backbone.trainable = False
+
+        #x_train = (x_train + 1) / 2  # Normalize the images to [0, 1]
+        classifier.trainable = True
+        classifier.compile(optimizer='adam', loss='categorical_crossentropy', metrics=[m_classifier])
+        print("Initial classifier test set acc: ")
+        classifier.evaluate(test_ds)
+
+
+        if isTrain:
+
+            # if you do not want to train from scratch then uncomment below lines
+            # Loads the weights if you want to continue from where you left
+            #print("Loading classifier weights.")
+            #classifier.load_weights(checkpoint_path)
+
+            # Create a callback that saves the model's weights
+            cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                             save_weights_only=True,
+                                                             verbose=1)
+            #classifier.compile(optimizer='adam', loss='categorical_crossentropy', metrics=[m_classifier])
+            classifier.fit(train_ds, epochs=10,callbacks=[cp_callback] ,validation_data=test_ds
+                           )
+            # Save the weights
+            classifier.save_weights('./output/classifier/checkpoint')
+            backbone.load_weights('./output/classifier/checkpoint').expect_partial()
         else:
-            x_train = (x_train + 1) / 2  # Normalize the images to [0, 1]
-            classifier.trainable = True
-            classifier.compile(optimizer='adam', loss='categorical_crossentropy', metrics=[custom_acc])
-            history = classifier.fit(x_train, y_train, epochs=2, callbacks=[cp_callback],batch_size=128 )
+            # Loads the weights
+            print("Loading classifier weights.")
+            classifier.load_weights('./output/classifier/checkpoint')
+            backbone.load_weights('./output/classifier/checkpoint').expect_partial()
+
+        classifier.trainable = False
+        backbone.trainable = False
+
+        print("Classifier test set acc after loading model: ")
+        classifier.evaluate(test_ds)
+
+
 
         return backbone, classifier
 
@@ -160,11 +195,11 @@ with tf.device(device[0].name):
 
 
 
-        def compile(self, g_optimizer,metric, loss_fn):
+        def compile(self, g_optimizer, loss_fn):
             super(GAN, self).compile()
             self.g_optimizer = g_optimizer
-            self.g_loss_tracker = metric
-            self.acc_metric = custom_acc
+            #self.g_loss_tracker = metric
+            #self.acc_metric = custom_acc
             self.loss_fn = loss_fn
 
         def call(self, data, training=False):
@@ -180,15 +215,13 @@ with tf.device(device[0].name):
 
         def test_step(self, data):
             labels = data[1]
-            _adv_images = self.call(data)
+            _adv_images = self(data,training=False)
             # Compute predictions
             predictions = self.classifier(_adv_images)
-
-            acc = custom_acc(labels, predictions)
-
+            m_test.update_state(labels, predictions)
             # Return a dict mapping metric names to current value.
             # Note that it will include the loss (tracked in self.metrics).
-            return {"test set acc":acc}
+            return {"acc ":m_test.result()}
 
 
 
@@ -210,8 +243,13 @@ with tf.device(device[0].name):
                 #disc_loss = models.discriminator_loss(real_output, fake_output)
 
 
-            adv_images_embedding = self.classifier(adv_images + 1 / 2)
-            acc = self.acc_metric(labels,adv_images_embedding)
+            adv_imgs_result = self.classifier(adv_images + 1 / 2)
+            #acc = self.acc_metric(labels,adv_imgs_result,isTest=False)
+
+
+            #adv_imgs_test = self.call(self.validation_data)
+            #adv_imgs_test_result = self.classifier(adv_imgs_test + 1 / 2)
+            #test_acc = self.acc_metric(self.validation_data[1], adv_imgs_test_result)
 
 
 
@@ -220,12 +258,26 @@ with tf.device(device[0].name):
             self.g_optimizer.apply_gradients(zip(gradients_of_generator, self.generator.trainable_variables))
             #discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
 
-            self.g_loss_tracker.update_state(gen_loss)
+            #prediction_labels = tf.math.argmax(adv_imgs_result, 1)
+            #prediction_labels = tf.one_hot(prediction_labels, 10)
+            #tf.cast(prediction_labels,tf.int32)
+            g_loss_tracker.update_state(gen_loss)
+            m_train.update_state(labels,adv_imgs_result)
+
 
 
             #d_loss_tracker.update_state(disc_loss)
             # Return a dict mapping metric names to current value
-            return {"g_loss": self.g_loss_tracker.result() , "training acc": acc }
+            return {"g_loss": g_loss_tracker.result() , "training acc": m_train.result() }
+
+        @property
+        def metrics(self):
+            # We list our `Metric` objects here so that `reset_states()` can be
+            # called automatically at the start of each epoch
+            # or at the start of `evaluate()`.
+            # If you don't implement this property, you have to call
+            # `reset_states()` yourself at the time of your choosing.
+            return [g_loss_tracker, m_train, m_test]
 
 
 
