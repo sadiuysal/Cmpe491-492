@@ -1,5 +1,6 @@
 _lambda = 64 #256 in RoCL
-nof_epochs = 15 #
+nof_epochs = 25 # Generator training nof epochs
+nof_epochs_classifier = 20 # Classifier training nof epochs
 ##
 BATCH_SIZE = 128 # default 64
 class_num = 10
