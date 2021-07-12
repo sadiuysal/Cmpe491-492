@@ -22,6 +22,25 @@ device = logical_devices_CPU
 with tf.device(device[0].name):"""
 
 
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+  print("GPU's found: ")
+  print(gpus)
+  print("Using device with 1GB memory limit: ",gpus[0])
+  # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
+  try:
+    tf.config.experimental.set_virtual_device_configuration(
+        gpus[0],
+        [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+  except RuntimeError as e:
+    # Virtual devices must be set before GPUs have been initialized
+    print(e)
+
+
+
+
 # This method returns a helper function to compute cross entropy loss
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
 #metric_test = tf.keras.metrics.Accuracy()
@@ -30,23 +49,6 @@ m_train = tf.keras.metrics.CategoricalAccuracy()
 m_test = tf.keras.metrics.CategoricalAccuracy()
 m_classifier = tf.keras.metrics.CategoricalAccuracy()
 g_loss_tracker = tf.keras.metrics.Mean(name="loss")          #loss tracker
-
-
-"""#custom accuracy metric
-def custom_acc(y_true, y_pred, isTest=False):
-    print("y_true: ", y_true)
-    print("y pred: ",y_pred )
-    prediction_labels = tf.math.argmax(y_pred, 1)
-    print("y pred: ", prediction_labels)
-    prediction_labels = tf.one_hot(prediction_labels, 10)
-    print("y pred: ", prediction_labels)
-    if isTest:
-        metric_test.update_state(y_true, prediction_labels)
-        return metric_test.result()
-    else:
-        metric_train.update_state(y_true, prediction_labels)
-        return metric_train.result()"""
-
 
 
 
@@ -198,8 +200,6 @@ class GAN(keras.Model):
     def compile(self, g_optimizer, loss_fn):
         super(GAN, self).compile()
         self.g_optimizer = g_optimizer
-        #self.g_loss_tracker = metric
-        #self.acc_metric = custom_acc
         self.loss_fn = loss_fn
 
     def call(self, data, training=False):
@@ -244,23 +244,11 @@ class GAN(keras.Model):
 
 
         adv_imgs_result = self.classifier(adv_images + 1 / 2)
-        #acc = self.acc_metric(labels,adv_imgs_result,isTest=False)
-
-
-        #adv_imgs_test = self.call(self.validation_data)
-        #adv_imgs_test_result = self.classifier(adv_imgs_test + 1 / 2)
-        #test_acc = self.acc_metric(self.validation_data[1], adv_imgs_test_result)
-
-
 
         gradients_of_generator = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
 
         self.g_optimizer.apply_gradients(zip(gradients_of_generator, self.generator.trainable_variables))
-        #discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
 
-        #prediction_labels = tf.math.argmax(adv_imgs_result, 1)
-        #prediction_labels = tf.one_hot(prediction_labels, 10)
-        #tf.cast(prediction_labels,tf.int32)
         g_loss_tracker.update_state(gen_loss)
         m_train.update_state(labels,adv_imgs_result)
 

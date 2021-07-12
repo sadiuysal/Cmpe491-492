@@ -37,22 +37,6 @@ import tensorflow_docs.vis.embed as embed
 #device = logical_devices_CPU
 #print("Using device :", device[0].name)
 
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-  print("GPU's found: ")
-  print(gpus)
-  print("Using device with 1GB memory limit: ",gpus[0])
-  # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
-  try:
-    tf.config.experimental.set_virtual_device_configuration(
-        gpus[0],
-        [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
-    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-  except RuntimeError as e:
-    # Virtual devices must be set before GPUs have been initialized
-    print(e)
-
 
 def SetBatchNormalizationMomentum(model, new_value, prefix='', verbose=False):
   for ii, layer in enumerate(model.layers):
@@ -88,21 +72,21 @@ y_test = np_utils.to_categorical(y_test, 10)
 
 # Batch and shuffle the data
 train_ds_classifier = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(cfg.BUFFER_SIZE).batch(
-    cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE).take(100)
+    cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE)#.take(100)
 test_ds_classifier = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(cfg.BUFFER_SIZE).batch(
     cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE)
 
 backbone, classifier = models.make_discriminator_model()
 SetBatchNormalizationMomentum(classifier,0.9)
 SetBatchNormalizationMomentum(backbone,0.9)
-backbone, classifier = models.trainClassifierCifar10(backbone, classifier,train_ds_classifier,test_ds_classifier, isTrain=False)
+backbone, classifier = models.trainClassifierCifar10(backbone, classifier,train_ds_classifier,test_ds_classifier, isTrain=True)
 
 x_train = (x_train - 0.5) * 2  # Normalize the images to [-1, 1]
 x_test = (x_test - 0.5) * 2   # Normalize the images to [-1, 1]
 
 # Batch and shuffle the data
 train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(cfg.BUFFER_SIZE).batch(
-    cfg.BATCH_SIZE,drop_remainder=True,num_parallel_calls=tf.data.AUTOTUNE).take(200)
+    cfg.BATCH_SIZE,drop_remainder=True,num_parallel_calls=tf.data.AUTOTUNE)#.take(200)
 test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(cfg.BUFFER_SIZE).batch(
     cfg.BATCH_SIZE, drop_remainder=True, num_parallel_calls=tf.data.AUTOTUNE)
 
